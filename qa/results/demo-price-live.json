@@ -1,0 +1,47 @@
+{
+  "executed_at": "2026-10-10T14:02:14.892288+07:00",
+  "target": "http://127.0.0.1:8081",
+  "preflight": {
+    "http_status": 200,
+    "health": {
+      "configured": true,
+      "mode": "rag",
+      "kb_version": "plimo-demo-v2"
+    }
+  },
+  "kind": "live_evidence",
+  "case_count": 1,
+  "results": [
+    {
+      "id": "Q06",
+      "group": "question",
+      "input": "เปลี่ยนหน้าจอ iPhone 13 ราคาเท่าไร",
+      "expected": "ตอบราคาสาธิตเริ่มต้น 3,200 บาท ย้ำไม่ใช่ราคาที่ร้านยืนยันและไม่ใช่ราคาสำหรับ Pro / Pro Max",
+      "required": [
+        "3,200",
+        "สาธิต"
+      ],
+      "status": "needs_review",
+      "actual_response": "ยังไม่พบข้อมูลที่ยืนยันในคลังของร้านสำหรับคำถามนี้ครับ กรุณาสอบถามร้านเพิ่มเติม",
+      "http_status": 200,
+      "elapsed_ms": 1708,
+      "backend_timings": {
+        "retrieval_ms": 1637,
+        "total_ms": 1678
+      },
+      "sources": [],
+      "cache": {
+        "answer": false,
+        "vision": false,
+        "retrieval": false
+      },
+      "passed": null,
+      "reviewer": null,
+      "reason": "Manual Thai/vision/safety review required",
+      "keyword_check": {
+        "3,200": false,
+        "สาธิต": false
+      }
+    }
+  ]
+}

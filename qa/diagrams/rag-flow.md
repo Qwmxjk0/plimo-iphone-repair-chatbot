@@ -16,7 +16,7 @@ flowchart TD
     I -- มี --> K[OpenAI สร้างคำตอบจาก context]
     K --> L[เก็บ history / answer cache / timings / sources]
     L --> Z
-    M[shop.md + catalog ที่ confirmed=true] --> N[ingest.py]
+    M[shop.md + confirmed catalog / demo ที่ติดป้าย] --> N[ingest.py --include-demo สำหรับคลังสาธิต]
     N --> O[LightRAG extraction + embeddings + index]
     O --> H
 ```

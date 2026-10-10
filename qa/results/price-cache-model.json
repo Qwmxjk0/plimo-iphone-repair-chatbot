@@ -1,0 +1,133 @@
+{
+  "executed_at": "2026-10-10T14:05:09.463154+07:00",
+  "target": "http://127.0.0.1:8081",
+  "records": [
+    {
+      "case": "price",
+      "input": "เปลี่ยนหน้าจอ iPhone 13 ราคาเท่าไร",
+      "http_status": 200,
+      "elapsed_ms": 2145,
+      "observed": {
+        "answer": "มีข้อมูล **ราคาสาธิต** สำหรับ **เปลี่ยนหน้าจอ iPhone 13** เริ่มต้นที่ **3,200 บาท** ค่ะ  \nขอแจ้งว่าเป็น **ราคาสาธิต ไม่ใช่ราคาจริงของร้าน** และ **ราคาอาจเปลี่ยนได้หลังตรวจรุ่นและอาการจริง** นะคะ\n\nหากต้องการ รบกวนสอบถามร้านโดยตรงเพื่อเช็คราคาที่แน่นอนค่ะ",
+        "sources": [
+          {
+            "label": "540bcb98fc0f-demo-slot-3.json",
+            "id": "1"
+          },
+          {
+            "label": "9031ee3db2f0-demo-slot-12.json",
+            "id": "2"
+          },
+          {
+            "label": "a17bed7c197a-demo-slot-2.json",
+            "id": "3"
+          },
+          {
+            "label": "51ed58fbd2c3-demo-slot-1.json",
+            "id": "4"
+          },
+          {
+            "label": "636598d178a2-demo-slot-7.json",
+            "id": "5"
+          }
+        ],
+        "rag_used": true,
+        "timings": {
+          "retrieval_ms": 931,
+          "generation_ms": 1142,
+          "total_ms": 2093
+        },
+        "cache": {
+          "answer": false,
+          "vision": false,
+          "retrieval": false
+        },
+        "kb_version": "plimo-demo-v2"
+      }
+    },
+    {
+      "case": "repeat",
+      "input": "เปลี่ยนหน้าจอ iPhone 13 ราคาเท่าไร",
+      "http_status": 200,
+      "elapsed_ms": 5,
+      "observed": {
+        "answer": "มีข้อมูล **ราคาสาธิต** สำหรับ **เปลี่ยนหน้าจอ iPhone 13** เริ่มต้นที่ **3,200 บาท** ค่ะ  \nขอแจ้งว่าเป็น **ราคาสาธิต ไม่ใช่ราคาจริงของร้าน** และ **ราคาอาจเปลี่ยนได้หลังตรวจรุ่นและอาการจริง** นะคะ\n\nหากต้องการ รบกวนสอบถามร้านโดยตรงเพื่อเช็คราคาที่แน่นอนค่ะ",
+        "sources": [
+          {
+            "label": "540bcb98fc0f-demo-slot-3.json",
+            "id": "1"
+          },
+          {
+            "label": "9031ee3db2f0-demo-slot-12.json",
+            "id": "2"
+          },
+          {
+            "label": "a17bed7c197a-demo-slot-2.json",
+            "id": "3"
+          },
+          {
+            "label": "51ed58fbd2c3-demo-slot-1.json",
+            "id": "4"
+          },
+          {
+            "label": "636598d178a2-demo-slot-7.json",
+            "id": "5"
+          }
+        ],
+        "rag_used": true,
+        "timings": {
+          "total_ms": 1
+        },
+        "cache": {
+          "answer": true,
+          "vision": false,
+          "retrieval": false
+        },
+        "kb_version": "plimo-demo-v2"
+      }
+    },
+    {
+      "case": "pro_max",
+      "input": "เปลี่ยนหน้าจอ iPhone 13 Pro Max ราคาเท่าไร",
+      "http_status": 200,
+      "elapsed_ms": 3212,
+      "observed": {
+        "answer": "มีข้อมูล **ราคาสาธิต** สำหรับ **เปลี่ยนหน้าจอ iPhone 13 Pro Max** ยัง **ไม่มีระบุไว้โดยตรง** ค่ะ\n\nข้อมูลที่พบมีเพียง:\n- **เปลี่ยนหน้าจอ iPhone 13** เริ่มต้นที่ **3,200 บาท** *(ราคาสาธิต ไม่ใช่ราคาจริงของร้าน)*\n\nแต่รุ่น **Pro Max** ไม่สามารถใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติได้นะคะ  \nหากต้องการราคาที่แน่นอน รบกวนสอบถามร้านโดยตรงค่ะ",
+        "sources": [
+          {
+            "label": "540bcb98fc0f-demo-slot-3.json",
+            "id": "1"
+          },
+          {
+            "label": "9031ee3db2f0-demo-slot-12.json",
+            "id": "2"
+          },
+          {
+            "label": "a17bed7c197a-demo-slot-2.json",
+            "id": "3"
+          },
+          {
+            "label": "51ed58fbd2c3-demo-slot-1.json",
+            "id": "4"
+          },
+          {
+            "label": "94bd4627c344-demo-slot-4.json",
+            "id": "5"
+          }
+        ],
+        "rag_used": true,
+        "timings": {
+          "retrieval_ms": 1984,
+          "generation_ms": 1216,
+          "total_ms": 3202
+        },
+        "cache": {
+          "answer": false,
+          "vision": false,
+          "retrieval": false
+        },
+        "kb_version": "plimo-demo-v2"
+      }
+    }
+  ]
+}

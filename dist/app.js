@@ -2,9 +2,11 @@ const $ = (selector) => document.querySelector(selector);
 const input = $('#message'), fileInput = $('#file-input'), send = $('#send');
 let files = [], busy = false, generation = 0;
 let live = false;
+let demoCatalog=[];
+const catalogReady=fetch('catalog.json').then(r=>r.ok?r.json():[]).then(items=>{demoCatalog=items.filter(i=>i.demo===true);}).catch(()=>{});
 const ready = fetch('/api/health').then(r => r.ok ? r.json() : null).then(data => {
   live = data?.configured === true;
-  if (live) $('.composer-note').textContent = 'ผู้ช่วยตอบจากข้อมูลร้าน · ภาพใช้เพื่อประเมินเบื้องต้น';
+  if (live) $('.composer-note').textContent = 'ผู้ช่วยใช้ข้อมูลร้านและราคาสาธิต · ภาพใช้ประเมินเบื้องต้น';
 }).catch(() => { live = false; });
 const objectUrls = new Set();
 function imageUrl(file) { const url = URL.createObjectURL(file); objectUrls.add(url); return url; }
@@ -62,7 +64,16 @@ function scrollToEnd() { const area = $('.workspace'); area.scrollTop = area.scr
 function demoReply(text, imageCount) {
   if (imageCount) return 'ได้รับภาพ ' + imageCount + ' ภาพแล้วครับ\n\nตอนนี้เป็นโหมดสาธิตหน้าเว็บ จึงยังไม่ได้วิเคราะห์ภาพด้วย AI กรุณาระบุรุ่น iPhone และเล่าอาการเพิ่มเติมได้เลยครับ\n\nPlimo รับ iPhone 11–17 รวม Pro / Pro Max และตรวจเช็คฟรีที่ร้าน';
   if (/เปิด|ปิด|กี่โมง|เวลา|พุธ|เช็คฟรี/.test(text)) return 'ร้านเปิด 10:00–20:00 น. ทุกวัน ยกเว้นวันพุธครับ\n\nตรวจเช็คฟรีที่ร้าน และรับซ่อม iPhone 11–17 รวม Pro / Pro Max';
-  if (/ราคา|เท่าไร|เท่าไหร่|บาท|ส่วนลด|ประกัน/.test(text)) return 'ข้อมูลต้นแบบยังไม่มีราคาซ่อมหรือเงื่อนไขรับประกันครับ กรุณาสอบถามร้านเพิ่มเติม\n\nแจ้งรุ่น iPhone และอาการเสียได้เลย ร้านมีบริการตรวจเช็คฟรีครับ';
+  if (/ประกัน|ส่วนลด/.test(text)) return 'ยังไม่มีเงื่อนไขรับประกันหรือส่วนลดที่ร้านยืนยันครับ ราคาในแค็ตตาล็อกเป็นข้อมูลสาธิตเท่านั้น';
+  if (/ราคา|เท่าไร|เท่าไหร่|บาท|หน้าจอ|แบตเตอรี่|สายชาร์จ|ฟิล์ม|เคส|สินค้า|บริการ/.test(text)) {
+    if (/จอง|ซื้อเลย|ชำระ/.test(text)) return 'รายการและราคาเป็นข้อมูลสาธิตครับ ยังรับจองหรือชำระเงินไม่ได้ ต้องยืนยันกับร้านก่อน';
+    if (/pro|โปร/i.test(text)) return 'ราคาในรายการหน้าจอและแบตเตอรี่ตัวอย่างระบุเฉพาะรุ่นปกติครับ ยังไม่มีราคาสาธิตเฉพาะ Pro / Pro Max ต้องสอบถามร้านเพื่อยืนยันราคา';
+    const model=text.match(/(?:iphone|ไอโฟน)\s*(1[1-7])/i)?.[1];
+    const term=['หน้าจอ','แบตเตอรี่','สายชาร์จ','ฟิล์ม','เคส','กล้อง','ลำโพง','ช่องชาร์จ'].find(t=>text.includes(t));
+    const matches=demoCatalog.filter(i=>(!term||i.name.includes(term))&&(!model||i.models.some(m=>m==='iPhone '+model||m.includes('11–17'))));
+    if (!matches.length) return 'ยังไม่มีรายการและราคาสาธิตที่ตรงกับคำถามครับ กรุณาระบุรุ่นและบริการ หรือสอบถามร้านเพื่อขอราคาจริง';
+    return 'ราคาต่อไปนี้เป็นข้อมูลสาธิต ไม่ใช่ราคาเสนอจริงจากร้านครับ\n\n'+matches.map(i=>i.name+' · '+(i.price_type==='starting'?'เริ่มต้น ':'')+new Intl.NumberFormat('th-TH').format(i.price)+' บาท').join('\n')+'\n\nราคาสาธิต ต้องยืนยันรุ่น อาการ เงื่อนไข และราคากับร้านก่อน ไม่มีการจองหรือชำระเงินในเว็บนี้';
+  }
   return 'แจ้งรุ่น iPhone และอาการที่พบได้เลยครับ ถ้ามีภาพตัวเครื่อง หน้าจอ หรือข้อความแจ้งเตือน สามารถกด + เพื่อแนบภาพได้\n\nPlimo รับ iPhone 11–17 รวม Pro / Pro Max และตรวจเช็คฟรีที่ร้าน\n\nนี่เป็นคำตอบสาธิต ยังไม่ได้ตรวจสอบอาการด้วย AI ครับ';
 }
 async function submit() {
@@ -84,12 +95,13 @@ async function submit() {
     } else {
       loading.textContent = 'กำลังเตรียมคำตอบสาธิต';
       await new Promise(resolve => setTimeout(resolve, 850));
+      await catalogReady;
       result = {answer:demoReply(text, images.length),sources:[]};
     }
     if (turn !== generation) return;
     loading.remove(); const reply = message('assistant', result.answer);
     const source = document.createElement('p'); source.className = 'message-source';
-    source.textContent = live ? (result.sources.length ? 'อ้างอิง: '+result.sources.map(s=>s.label.endsWith('shop.md')?'ข้อมูลร้าน Plimo':s.label).join(' · ') : 'ยังไม่พบข้อมูลที่ยืนยัน') : 'โหมดสาธิต · ยังไม่ได้เชื่อมผู้ช่วย AI';
+    source.textContent = live ? (result.sources.length ? 'อ้างอิง: '+result.sources.map(s=>s.label.endsWith('shop.md')?'ข้อมูลร้าน Plimo':s.label.includes('demo-slot-')?'รายการและราคาสาธิต':'เอกสารอ้างอิง').join(' · ') : 'ยังไม่พบข้อมูลที่ยืนยัน') : 'โหมดสาธิต · ยังไม่ได้เชื่อมผู้ช่วย AI';
     reply.append(source);
   } catch (err) {
     if (turn !== generation) return;

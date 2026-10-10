@@ -1,162 +1,231 @@
 [
   {
     "id": "slot-1",
-    "name": "รายการ 01",
+    "name": "เปลี่ยนหน้าจอ iPhone 11",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 1900,
+    "price_type": "starting",
+    "description": "เปลี่ยนชุดหน้าจอสำหรับงานสาธิต",
+    "models": [
+      "iPhone 11"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-2",
-    "name": "รายการ 02",
+    "name": "เปลี่ยนหน้าจอ iPhone 12",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 2500,
+    "price_type": "starting",
+    "description": "ตัวอย่างบริการเปลี่ยนชุดหน้าจอ",
+    "models": [
+      "iPhone 12"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-3",
-    "name": "รายการ 03",
+    "name": "เปลี่ยนหน้าจอ iPhone 13",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 3200,
+    "price_type": "starting",
+    "description": "ตัวอย่างบริการเปลี่ยนชุดหน้าจอ",
+    "models": [
+      "iPhone 13"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-4",
-    "name": "รายการ 04",
+    "name": "เปลี่ยนหน้าจอ iPhone 14",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 3900,
+    "price_type": "starting",
+    "description": "ตัวอย่างบริการเปลี่ยนชุดหน้าจอ",
+    "models": [
+      "iPhone 14"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-5",
-    "name": "รายการ 05",
+    "name": "เปลี่ยนหน้าจอ iPhone 15",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 4900,
+    "price_type": "starting",
+    "description": "ตัวอย่างบริการเปลี่ยนชุดหน้าจอ",
+    "models": [
+      "iPhone 15"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-6",
-    "name": "รายการ 06",
+    "name": "เปลี่ยนหน้าจอ iPhone 16",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 5900,
+    "price_type": "starting",
+    "description": "ตัวอย่างบริการเปลี่ยนชุดหน้าจอ",
+    "models": [
+      "iPhone 16"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-7",
-    "name": "รายการ 07",
+    "name": "เปลี่ยนหน้าจอ iPhone 17",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 6900,
+    "price_type": "starting",
+    "description": "ตัวอย่างบริการเปลี่ยนชุดหน้าจอ",
+    "models": [
+      "iPhone 17"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-8",
-    "name": "รายการ 08",
+    "name": "เปลี่ยนแบตเตอรี่ iPhone 11–13",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 990,
+    "price_type": "starting",
+    "description": "ตัวอย่างบริการเปลี่ยนแบตเตอรี่",
+    "models": [
+      "iPhone 11",
+      "iPhone 12",
+      "iPhone 13"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-9",
-    "name": "รายการ 09",
+    "name": "เปลี่ยนแบตเตอรี่ iPhone 14–17",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 1490,
+    "price_type": "starting",
+    "description": "ตัวอย่างบริการเปลี่ยนแบตเตอรี่",
+    "models": [
+      "iPhone 14",
+      "iPhone 15",
+      "iPhone 16",
+      "iPhone 17"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-10",
-    "name": "รายการ 10",
+    "name": "ทำความสะอาดช่องชาร์จ",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 290,
+    "price_type": "starting",
+    "description": "ตัวอย่างบริการทำความสะอาดช่องต่อ",
+    "models": [
+      "iPhone 11–17 รวม Pro / Pro Max"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-11",
-    "name": "รายการ 11",
+    "name": "เปลี่ยนชุดลำโพง",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 890,
+    "price_type": "starting",
+    "description": "ตัวอย่างบริการแก้ปัญหาเสียงจากชุดลำโพง",
+    "models": [
+      "iPhone 11–17 รวม Pro / Pro Max"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-12",
-    "name": "รายการ 12",
+    "name": "เปลี่ยนชุดกล้องหลัง",
     "kind": "service",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 1790,
+    "price_type": "starting",
+    "description": "ตัวอย่างบริการเปลี่ยนชุดกล้องหลัง",
+    "models": [
+      "iPhone 11–17 รวม Pro / Pro Max"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาตัวอย่างเริ่มต้น ต้องตรวจรุ่นและอาการก่อนเสนอราคาจริง รุ่น Pro / Pro Max ไม่ใช้ราคาเดียวกับรุ่นปกติโดยอัตโนมัติ"
   },
   {
     "id": "slot-13",
-    "name": "รายการ 13",
+    "name": "ฟิล์มกระจกสำหรับ iPhone",
     "kind": "product",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 199,
+    "price_type": "fixed",
+    "description": "สินค้าอุปกรณ์เสริมตัวอย่าง เลือกขนาดตามรุ่น",
+    "models": [
+      "iPhone 11–17 รวม Pro / Pro Max"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาต่อชิ้นตัวอย่าง ต้องยืนยันรุ่นและสต็อกกับร้านก่อนซื้อ"
   },
   {
     "id": "slot-14",
-    "name": "รายการ 14",
+    "name": "เคสใสสำหรับ iPhone",
     "kind": "product",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 299,
+    "price_type": "fixed",
+    "description": "สินค้าอุปกรณ์เสริมตัวอย่าง เลือกขนาดตามรุ่น",
+    "models": [
+      "iPhone 11–17 รวม Pro / Pro Max"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาต่อชิ้นตัวอย่าง ต้องยืนยันรุ่นและสต็อกกับร้านก่อนซื้อ"
   },
   {
     "id": "slot-15",
-    "name": "รายการ 15",
+    "name": "สายชาร์จ Lightning",
     "kind": "product",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 390,
+    "price_type": "fixed",
+    "description": "สายชาร์จตัวอย่างสำหรับเครื่องที่ใช้พอร์ต Lightning",
+    "models": [
+      "iPhone 11–14 รวม Pro / Pro Max"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาต่อชิ้นตัวอย่าง ต้องยืนยันรุ่นและสต็อกกับร้านก่อนซื้อ"
   },
   {
     "id": "slot-16",
-    "name": "รายการ 16",
+    "name": "สายชาร์จ USB-C",
     "kind": "product",
     "confirmed": false,
-    "price": null,
-    "description": "",
-    "models": [],
-    "terms": ""
+    "demo": true,
+    "price": 390,
+    "price_type": "fixed",
+    "description": "สายชาร์จตัวอย่างสำหรับเครื่องที่ใช้พอร์ต USB-C",
+    "models": [
+      "iPhone 15–17 รวม Pro / Pro Max"
+    ],
+    "terms": "ราคาและรายการสาธิต ไม่ใช่ข้อเสนอจริงของร้าน ไม่มีการรับจองหรือชำระเงินผ่านเว็บนี้; ราคาต่อชิ้นตัวอย่าง ต้องยืนยันรุ่นและสต็อกกับร้านก่อนซื้อ"
   }
 ]

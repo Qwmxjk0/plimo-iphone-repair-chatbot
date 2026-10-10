@@ -1,6 +1,6 @@
 # Plimo storefront + embedded chatbot
 
-A single storefront with a floating chat panel. `chat.html` is an internal embedded widget, not a separate customer navigation page. Thai UI, 16 catalog slots, search/type filters, item details, shop hours, image previews, remove attachments, paste/drop, and responsive chat. Catalog slots are explicitly pending and are not counted as actual confirmed services.
+A single storefront with a floating chat panel. `chat.html` is an internal embedded widget, not a separate customer navigation page. Thai UI, 16 catalog slots, search/type filters, item details, shop hours, image previews, remove attachments, paste/drop, and responsive chat. Catalog now has 16 explicitly labeled demo items with illustrative prices, not confirmed shop offers.
 
 ## Preview without API keys
 
@@ -19,7 +19,7 @@ Use JPEG, PNG or WebP, up to 3 images/10 MB each. Server checks decoding, pixel 
 
 ## Real catalog data
 
-Edit `dist/catalog.json`: keep a stable `id`, set `name`, `kind` (`service` or `product`), `description`, `price` (number in THB or null), `models`, `terms`, and `confirmed: true` only after shop approval. Only confirmed items enter RAG. `knowledge/shop.md` contains the actual facts supplied by the user. The 16 pending slots are not valid evidence of 16 actual services for the assignment.
+Edit `dist/catalog.json`: keep a stable `id`, set `name`, `kind` (`service` or `product`), `description`, `price` (number in THB or null), `models`, `terms`, and `confirmed: true` only after shop approval. Only confirmed items enter RAG by default. Use ingest.py --include-demo to index labeled examples in the separate demo workspace. `knowledge/shop.md` contains the actual facts supplied by the user. The 16 demo records have confirmed=false and demo=true; do not present them as actual shop services.
 
 When changing knowledge, update `KB_VERSION` and use a fresh named LightRAG workspace/volume (preserve the old volume), then ingest again; changing a cache version alone does not delete obsolete source documents from LightRAG. Rebuild API and web after catalog edits. Pin `LIGHTRAG_IMAGE` to a tested release/digest after the first live integration; current default follows the official latest image and its contract may change.
 
@@ -28,7 +28,11 @@ For production Docker hosting, place an HTTPS reverse proxy in front of the loop
 Live OpenAI requests and LightRAG indexing require a valid key and API billing. No paid live requests were made during prototype development.
 # ภาพประกอบและหลักฐานทดสอบ
 
-การ์ด 16 ช่องใช้ภาพการ์ตูนใหม่ 3 แบบจาก built-in ImageGen ใน `dist/assets/` เป็นภาพประกอบทั่วไป รายการยังรอข้อมูลร้านและไม่ใส่ลง RAG ดู prompt ที่ `qa/art-prompts.md`
+การ์ด 16 ช่องใช้ภาพการ์ตูนใหม่ 3 แบบจาก built-in ImageGen ใน `dist/assets/` เป็นภาพประกอบทั่วไป รายการและราคาเป็นสาธิต เข้า RAG ได้ด้วย --include-demo และต้องคงป้ายสาธิต ดู prompt ที่ `qa/art-prompts.md`
 
 ชุดทดสอบ 10 คำถาม + 5 ภาพ + 5 ความปลอดภัย: `qa/test-plan.md`; ผลจริงที่เก็บ: `qa/results/live-results.json`; สถานะ stack: `qa/stack-audit.md`; แผนภาพ PNG/SVG: `qa/diagrams/stack-flow.*`
 
+
+## Demo price catalog
+
+See qa/demo-catalog.md. The current Compose uses a fresh rag-data-demo-v2 volume and KB_VERSION=plimo-demo-v2. Previous volumes are preserved. Index with docker compose exec api python ingest.py --include-demo, then wait for document processing. Never relabel examples as confirmed shop prices.

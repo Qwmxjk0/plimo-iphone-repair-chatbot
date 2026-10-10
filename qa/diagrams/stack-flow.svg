@@ -2,12 +2,12 @@
 <rect width="1500" height="1000" fill="#fafbf8"/>
 <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#607669"/></marker></defs>
 <text x="40" y="59" font-family="Arial,sans-serif" font-size="34" fill="#243128">PLIMO • Storefront + Thai multimodal RAG</text>
-<text x="40" y="97" font-family="Arial,sans-serif" font-size="20" fill="#243128">Implementation audit • 10 Oct 2026 • Green: running / Amber: configured design, not live</text>
+<text x="40" y="97" font-family="Arial,sans-serif" font-size="20" fill="#243128">Implementation audit • 10 Oct 2026 • Green: running / Amber: vision not yet verified</text>
 <rect x="35" y="140" width="310" height="350" rx="16" fill="none" stroke="#bac5b8" stroke-dasharray="8 7" stroke-width="2"/>
 <text x="53" y="178" font-family="Arial,sans-serif" font-size="22" fill="#243128">Customer browser</text>
 <rect x="55" y="205" width="270" height="105" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
 <text x="71" y="241" font-family="Arial,sans-serif" font-size="22" fill="#243128">Single-page storefront</text>
-<text x="71" y="268" font-family="Arial,sans-serif" font-size="14" fill="#243128">16 pending catalog slots</text>
+<text x="71" y="268" font-family="Arial,sans-serif" font-size="14" fill="#243128">16 demo items + example prices</text>
 <rect x="55" y="350" width="270" height="100" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
 <text x="71" y="386" font-family="Arial,sans-serif" font-size="22" fill="#243128">Embedded chat</text>
 <text x="71" y="413" font-family="Arial,sans-serif" font-size="14" fill="#243128">Thai text + image uploads</text>
@@ -22,23 +22,23 @@
 <rect x="765" y="205" width="265" height="95" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
 <text x="781" y="241" font-family="Arial,sans-serif" font-size="22" fill="#243128">Redis 7</text>
 <text x="781" y="268" font-family="Arial,sans-serif" font-size="14" fill="#243128">History + 3 cache layers</text>
-<rect x="765" y="360" width="265" height="100" rx="12" fill="#fff2d9" stroke="#b48639" stroke-width="2"/>
+<rect x="765" y="360" width="265" height="100" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
 <text x="781" y="396" font-family="Arial,sans-serif" font-size="22" fill="#243128">LightRAG</text>
 <text x="781" y="423" font-family="Arial,sans-serif" font-size="14" fill="#243128">Retrieval + graph / vector index</text>
-<rect x="765" y="565" width="265" height="95" rx="12" fill="#fff2d9" stroke="#b48639" stroke-width="2"/>
+<rect x="765" y="565" width="265" height="95" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
 <text x="781" y="601" font-family="Arial,sans-serif" font-size="22" fill="#243128">Persistent RAG volume</text>
 <text x="781" y="628" font-family="Arial,sans-serif" font-size="14" fill="#243128">Index + document storage</text>
-<rect x="415" y="565" width="260" height="95" rx="12" fill="#fff2d9" stroke="#b48639" stroke-width="2"/>
+<rect x="415" y="565" width="260" height="95" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
 <text x="431" y="601" font-family="Arial,sans-serif" font-size="22" fill="#243128">ingest.py</text>
-<text x="431" y="628" font-family="Arial,sans-serif" font-size="14" fill="#243128">Approved knowledge only</text>
-<text x="415" y="738" font-family="Arial,sans-serif" font-size="18" fill="#243128">Shop facts + confirmed catalog items</text>
-<text x="415" y="770" font-family="Arial,sans-serif" font-size="17" fill="#243128">Pending items and test images excluded</text>
+<text x="431" y="628" font-family="Arial,sans-serif" font-size="14" fill="#243128">Shop facts + labeled demo</text>
+<text x="415" y="738" font-family="Arial,sans-serif" font-size="18" fill="#243128">Shop facts + demo price catalog</text>
+<text x="415" y="770" font-family="Arial,sans-serif" font-size="17" fill="#243128">--include-demo keeps demo labels</text>
 <rect x="1110" y="140" width="350" height="550" rx="16" fill="none" stroke="#bac5b8" stroke-dasharray="8 7" stroke-width="2"/>
 <text x="1128" y="178" font-family="Arial,sans-serif" font-size="22" fill="#243128">External • OpenAI API</text>
 <rect x="1130" y="235" width="310" height="100" rx="12" fill="#fff2d9" stroke="#b48639" stroke-width="2"/>
 <text x="1146" y="271" font-family="Arial,sans-serif" font-size="22" fill="#243128">Vision + answer model</text>
 <text x="1146" y="298" font-family="Arial,sans-serif" font-size="14" fill="#243128">Responses API • gpt-5.4-mini</text>
-<rect x="1130" y="465" width="310" height="100" rx="12" fill="#fff2d9" stroke="#b48639" stroke-width="2"/>
+<rect x="1130" y="465" width="310" height="100" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
 <text x="1146" y="501" font-family="Arial,sans-serif" font-size="22" fill="#243128">Embedding + extraction</text>
 <text x="1146" y="528" font-family="Arial,sans-serif" font-size="14" fill="#243128">text-embedding-3-small</text>
 <polyline points="325,400 365,400 365,250 415,250" fill="none" stroke="#607669" stroke-width="3" marker-end="url(#arrow)"/>

@@ -17,7 +17,7 @@ services:
       LIGHTRAG_API_KEY: ${LIGHTRAG_API_KEY:-}
       LIGHTRAG_URL: http://lightrag:9621
       REDIS_URL: redis://redis:6379/0
-      KB_VERSION: ${KB_VERSION:-plimo-v1}
+      KB_VERSION: ${KB_VERSION:-plimo-demo-v2}
       RAG_MODE: ${RAG_MODE:-mix}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
     depends_on:
@@ -58,10 +58,10 @@ services:
       INPUT_DIR: /app/data/inputs
       RERANK_BINDING: "null"
     volumes:
-      - rag-data:/app/data/rag_storage
+      - rag-data-demo-v2:/app/data/rag_storage
       - rag-inputs:/app/data/inputs
     restart: unless-stopped
 volumes:
   redis-data:
-  rag-data:
+  rag-data-demo-v2:
   rag-inputs:

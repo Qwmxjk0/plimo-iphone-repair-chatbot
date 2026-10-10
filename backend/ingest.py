@@ -1,4 +1,4 @@
-"""Indexes confirmed records only; run manually after setting API keys."""
+"""Indexes approved facts; explicitly include labeled demo records for demo mode."""
 import asyncio
 import hashlib
 import json
@@ -6,17 +6,26 @@ import os
 from pathlib import Path
 import httpx
 
+def catalog_documents(catalog, include_demo=False):
+    texts, sources = [], []
+    for item in catalog:
+        demo = item.get('demo') is True
+        if (item.get('confirmed') is True and not demo) or (demo and include_demo):
+            if not item.get('name') or not item.get('description'):
+                raise ValueError('Catalog entries need name and description')
+            prefix = 'ข้อมูลสาธิตเท่านั้น ต้องบอกว่าเป็นราคาสาธิต ไม่ใช่ราคาจริงของร้าน ไม่รับจองหรือยืนยันสต็อก\n' if demo else 'ข้อมูลที่ร้านยืนยัน\n'
+            texts.append(prefix + json.dumps(item, ensure_ascii=False))
+            sources.append(('demo-' if demo else '') + item['id'] + '.json')
+    return texts, sources
+
 async def main():
     paths = sorted(Path('/app/knowledge').glob('*.md'))
     texts = [p.read_text() for p in paths]
     sources = [p.name for p in paths]
     catalog = json.loads(Path('/app/catalog.json').read_text())
-    for item in catalog:
-        if item.get('confirmed') is True:
-            if not item.get('name') or not item.get('description'):
-                raise ValueError('Confirmed catalog entries need name and description')
-            texts.append(json.dumps(item, ensure_ascii=False))
-            sources.append(item['id'] + '.json')
+    catalog_texts, catalog_sources = catalog_documents(catalog, include_demo='--include-demo' in __import__('sys').argv)
+    texts.extend(catalog_texts)
+    sources.extend(catalog_sources)
     key = os.environ.get('LIGHTRAG_API_KEY')
     if not key or not os.environ.get('OPENAI_API_KEY'):
         raise SystemExit('Set OPENAI_API_KEY and LIGHTRAG_API_KEY in .env first')
