@@ -1,0 +1,162 @@
+[
+  {
+    "id": "slot-1",
+    "name": "รายการ 01",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-2",
+    "name": "รายการ 02",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-3",
+    "name": "รายการ 03",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-4",
+    "name": "รายการ 04",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-5",
+    "name": "รายการ 05",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-6",
+    "name": "รายการ 06",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-7",
+    "name": "รายการ 07",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-8",
+    "name": "รายการ 08",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-9",
+    "name": "รายการ 09",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-10",
+    "name": "รายการ 10",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-11",
+    "name": "รายการ 11",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-12",
+    "name": "รายการ 12",
+    "kind": "service",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-13",
+    "name": "รายการ 13",
+    "kind": "product",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-14",
+    "name": "รายการ 14",
+    "kind": "product",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-15",
+    "name": "รายการ 15",
+    "kind": "product",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  },
+  {
+    "id": "slot-16",
+    "name": "รายการ 16",
+    "kind": "product",
+    "confirmed": false,
+    "price": null,
+    "description": "",
+    "models": [],
+    "terms": ""
+  }
+]

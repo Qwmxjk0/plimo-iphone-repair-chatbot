@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f4ef"><meta name="description" content="ผู้ช่วย Plimo iPhone Repair สอบถามบริการและแนบภาพอาการเสีย">
+  <title>Plimo — ผู้ช่วยร้านซ่อม iPhone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css"><script src="app.js" defer></script>
+</head>
+<body class="widget">
+<svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+<symbol id="phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 5h4M11 19h2"/></symbol>
+<symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+<symbol id="image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+</defs></svg>
+<aside class="sidebar">
+  <a class="brand" href="/" aria-label="Plimo หน้าแรก"><span class="brand-mark"><svg><use href="#phone"/></svg></span><span>plimo<span class="brand-dot">.</span><small>iPHONE REPAIR</small></span></a>
+  <button class="new-chat" id="new-chat"><svg><use href="#plus"/></svg>เริ่มบทสนทนาใหม่</button>
+  <div class="side-label">ผู้ช่วยของคุณ</div>
+  <div class="side-current"><span class="tiny-dot"></span>สอบถามบริการซ่อม<span class="side-arrow">↗</span></div>
+  <div class="store-note"><span class="note-icon">✳</span><h2>เรื่อง iPhone<br>ให้เราช่วยดูแล</h2><p>เริ่มจากเล่าอาการ หรือส่งภาพ<br>ให้เราดูเบื้องต้นได้เลย</p><div class="note-model">iPhone 11–17 <span>รวม Pro / Pro Max</span></div></div>
+  <div class="side-footer"><div><svg><use href="#clock"/></svg><span>10:00–20:00 น.<small>ทุกวัน ยกเว้นวันพุธ</small></span></div><p><span class="tiny-dot"></span> ตรวจเช็คฟรีที่ร้าน</p></div>
+</aside>
+<main>
+  <header class="topbar"><div class="mobile-brand">plimo<span>.</span></div><div class="topbar-title">ผู้ช่วย Plimo <span class="pill">พร้อมช่วยดูแล</span></div><div class="header-actions"><button class="mobile-new" id="mobile-new" aria-label="เริ่มบทสนทนาใหม่"><svg><use href="#plus"/></svg></button><button class="info-button" id="store-info">ข้อมูลร้าน <span>↗</span></button></div></header>
+  <div class="workspace">
+    <section class="welcome" id="welcome">
+      <div class="eyebrow"><span class="tiny-dot"></span> PLIMO CARE ASSISTANT</div>
+      <h1>iPhone มีปัญหาอะไร<br><span>ให้เราช่วยดูไหม?</span></h1>
+      <p class="intro">ถามเรื่องบริการ รุ่นที่รับซ่อม หรือแนบภาพอาการเสีย<br class="desktop-break">เริ่มต้นง่าย ๆ โดยไม่ต้องรู้ศัพท์ช่าง</p>
+      <div class="suggestions">
+        <button class="suggestion" data-question="หน้าจอแตก ร้านรับซ่อมหรือเปล่า"><span class="card-icon"><svg><use href="#phone"/></svg></span><strong>หน้าจอแตก</strong><span>สอบถามบริการซ่อมจอ</span><svg class="card-arrow"><use href="#arrow"/></svg></button>
+        <button class="suggestion" data-question="อยากให้ร้านช่วยตรวจอาการแบตเตอรี่"><span class="card-icon battery-icon">↯</span><strong>แบตมีปัญหา</strong><span>แบตหมดไว หรือเครื่องดับ</span><svg class="card-arrow"><use href="#arrow"/></svg></button>
+        <button class="suggestion" data-question="ร้านเปิดกี่โมง และตรวจเช็คฟรีไหม"><span class="card-icon"><svg><use href="#clock"/></svg></span><strong>ก่อนเข้าร้าน</strong><span>เวลาเปิดและการตรวจเช็ค</span><svg class="card-arrow"><use href="#arrow"/></svg></button>
+      </div>
+      <button class="photo-guide" id="photo-guide"><span class="photo-icon"><svg><use href="#image"/></svg></span><span><strong>อธิบายไม่ถูก? ส่งภาพมาได้</strong><small>ภาพตัวเครื่อง หน้าจอ หรือข้อความแจ้งเตือน</small></span><span class="guide-arrow">↗</span></button>
+    </section>
+    <section class="messages" id="messages" role="log" aria-label="บทสนทนา" aria-live="polite" hidden></section>
+  </div>
+  <div class="composer-wrap">
+    <div class="composer">
+      <div class="attachments" id="attachments" aria-label="ภาพที่แนบ" hidden></div>
+      <label for="message" class="sr-only">ข้อความถึงผู้ช่วย Plimo</label>
+      <textarea id="message" rows="1" placeholder="เล่าอาการ หรือพิมพ์คำถามของคุณ…" maxlength="3000"></textarea>
+      <div class="composer-bottom"><div class="composer-left"><button id="attach" class="attach-button" aria-label="แนบภาพ"><svg><use href="#plus"/></svg></button><span>แนบภาพได้ <span class="muted">· สูงสุด 3 ภาพ</span></span></div><button id="send" class="send-button" aria-label="ส่งข้อความ" disabled><svg><use href="#arrow"/></svg></button></div>
+    </div>
+    <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" multiple hidden>
+    <div class="error" id="error" role="alert" hidden></div>
+    <p class="composer-note">โหมดสาธิต · คำตอบอัตโนมัติยังไม่ได้เชื่อม AI <span>การประเมินจากภาพเป็นเพียงเบื้องต้น</span></p>
+  </div>
+</main>
+<dialog id="info-dialog"><button class="dialog-close" aria-label="ปิด">×</button><div class="eyebrow">PLIMO iPHONE REPAIR</div><h2>ข้อมูลร้าน</h2><p>รับซ่อม iPhone 11–17 รวม Pro / Pro Max</p><p>เปิด 10:00–20:00 น. ทุกวัน ยกเว้นวันพุธ</p><p>ตรวจเช็คฟรีที่ร้าน</p><div class="dialog-note">ราคาซ่อม ระยะเวลา และเงื่อนไขรับประกันยังไม่มีในข้อมูลต้นแบบ กรุณาสอบถามร้านเพิ่มเติม</div></dialog>
+</body>
+</html>
