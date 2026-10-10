@@ -151,7 +151,7 @@ def create_case(body:CaseBody,request:Request):
     if not re.match(r'^iPhone (11|12|13|14|15|16|17)(?: (?:Pro Max|Pro|Plus|mini))?$',body.model):raise HTTPException(422,'กรุณาเลือกรุ่น iPhone 11–17')
     with db() as c:
         now=time.time();r=c.execute('INSERT INTO cases(user_id,conversation_id,model,issue,status,created,updated) VALUES(?,?,?,?,?,?,?)',(u['id'],body.conversation_id,body.model,body.issue.strip(),'submitted',now,now));cid=r.lastrowid
-        c.execute('INSERT INTO case_events(case_id,actor,status,note,created) VALUES(?,?,?,?,?)',(cid,u['id'],'submitted','สมาชิกส่งเคสสาธิต',now))
+        c.execute('INSERT INTO case_events(case_id,actor,status,note,created) VALUES(?,?,?,?,?)',(cid,u['id'],'submitted','สมาชิกส่งคำขอซ่อม',now))
         row=c.execute('SELECT * FROM cases WHERE id=?',(cid,)).fetchone()
     return {'case':case_data(row)}
 @router.get('/member/cases')
@@ -251,11 +251,11 @@ def case_answer(u,text):
             rows=[] if len(raw)>12 else c.execute('SELECT * FROM cases WHERE id=? AND user_id=?',(int(raw),u['id'])).fetchall()
         else:rows=c.execute('SELECT * FROM cases WHERE user_id=? ORDER BY updated DESC,id DESC LIMIT 5',(u['id'],)).fetchall()
     if not rows:return 'ไม่พบเคสนี้ในบัญชีของคุณครับ' if match else 'บัญชีของคุณยังไม่มีเคสซ่อมครับ'
-    lines=['สถานะล่าสุดจากระบบเคสของคุณครับ (ระบบสาธิต)']
+    lines=['สถานะล่าสุดจากระบบเคสของคุณครับ']
     for row in rows:
         item=case_data(row);q=item['quote'];label=STATUS_NAMES[item['status']]
         if item['status']=='awaiting_approval' and q and q['status']=='approved':label='อนุมัติราคาแล้ว รอร้านเริ่มซ่อม'
         lines.append(item['reference']+' · '+item['model']+' · '+label)
-        if q and q['status']=='pending' and item['status']=='awaiting_approval':lines.append(f"ราคาเสนอสาธิต {q['amount']:,.2f} บาท — เปิดบัญชี → งานซ่อมของฉัน เพื่ออนุมัติหรือปฏิเสธราคา")
+        if q and q['status']=='pending' and item['status']=='awaiting_approval':lines.append(f"ราคาเสนอ {q['amount']:,.2f} บาท — เปิดบัญชี → งานซ่อมของฉัน เพื่ออนุมัติหรือปฏิเสธราคา")
     if not match:lines.append('แสดงสูงสุด 5 เคสล่าสุด ระบุเลข PLM-xxxxx เพื่อดูเคสที่ต้องการ')
     return '\n\n'.join(lines)

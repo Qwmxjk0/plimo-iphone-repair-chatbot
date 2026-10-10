@@ -17,7 +17,7 @@ flowchart LR
       Redis[Redis: แคชคำตอบ / ผลค้น / ภาพ / บริบท / จำกัดคำขอ]
       RAG[LightRAG: graph / vector / ข้อความต้นฉบับ]
       DB[(SQLite: สมาชิก / session / แชท / เคส / ประวัติสถานะ)]
-      Ingest[ingest.py: ข้อมูลร้านและราคาที่ติดป้ายสาธิต]
+      Ingest[ingest.py: ข้อมูลร้านและราคาประเมินเบื้องต้น]
       Storage[(Docker volumes)]
       Web --> API
       API <--> Redis
@@ -39,7 +39,7 @@ flowchart LR
     Admin --> Web
     API <--> GPT
     RAG <--> Index
-    Facts[shop.md และรายการราคาสาธิต] --> Ingest
+    Facts[shop.md และรายการราคาประเมิน] --> Ingest
     Site[chatgpt.site: หน้าเว็บตัวอย่าง static]
 ```
 
@@ -68,7 +68,7 @@ flowchart LR
 - Chatbot ตรวจคำถามสถานะเคสและอ่าน SQLite ตามเจ้าของบัญชีสดทุกครั้ง โดยไม่ใช้ GPT หรือ answer cache
 - สมาชิกอนุมัติหรือปฏิเสธใบเสนอราคาที่มีเลข revision ผ่านพอร์ทัล ราคาใหม่ต้องอนุมัติใหม่ก่อนเริ่มซ่อม
 - ประวัติแชทเก็บข้อความและจำนวนภาพ ไม่เก็บไฟล์ภาพถาวร
-- แค็ตตาล็อก 16 รายการและราคาเป็นข้อมูลสาธิต ไม่ใช่ราคาที่ร้านยืนยัน
+- แค็ตตาล็อก 16 รายการใช้ราคาประเมินเบื้องต้น ราคาสุทธิต้องตรวจเครื่องและอนุมัติก่อนเริ่มงาน
 - ทดสอบ text RAG + OpenAI + answer cache จริงแล้ว ทดสอบคุณภาพภาพจริงครบชุดยังค้างอยู่
 - เว็บ chatgpt.site เป็น static preview ระบบสมาชิก เคส Redis LightRAG และ OpenAI backend ทำงานผ่าน Docker local
 

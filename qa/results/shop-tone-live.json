@@ -1,0 +1,297 @@
+{
+  "executed_at": "2026-10-10T15:34:33.433343+07:00",
+  "kb_version": "plimo-estimate-v3",
+  "prompt_version": "thai-shop-estimate-v4",
+  "records": [
+    {
+      "case": "hours",
+      "input": "ร้านเปิดกี่โมงครับ",
+      "http_status": 200,
+      "checks": {
+        "transport": true,
+        "rag": true,
+        "no_demo": true
+      },
+      "observed": {
+        "answer": "ทางร้านเปิด 10:00–20:00 น. ทุกวัน ยกเว้นวันพุธครับ และสามารถนำเครื่องเข้ามาตรวจเช็คฟรีได้ครับ  \nต้องการให้ทางร้านแจ้งวันไหนสะดวกเข้ามาครับ",
+        "sources": [
+          {
+            "label": "f20de564201d-shop.md",
+            "id": "1"
+          },
+          {
+            "label": "37ee312e2f27-slot-6.json",
+            "id": "2"
+          },
+          {
+            "label": "900d22ec503d-slot-5.json",
+            "id": "3"
+          },
+          {
+            "label": "42e0e4c203f7-slot-4.json",
+            "id": "4"
+          },
+          {
+            "label": "68dcf7d8dd34-slot-2.json",
+            "id": "5"
+          }
+        ],
+        "rag_used": true,
+        "timings": {
+          "retrieval_ms": 1862,
+          "generation_ms": 1452,
+          "total_ms": 3321
+        },
+        "cache": {
+          "answer": false,
+          "vision": false,
+          "retrieval": false
+        },
+        "kb_version": "plimo-estimate-v3",
+        "conversation_id": null
+      }
+    },
+    {
+      "case": "price",
+      "input": "เปลี่ยนหน้าจอ iPhone 13 ราคาเท่าไร",
+      "http_status": 200,
+      "checks": {
+        "transport": true,
+        "rag": true,
+        "no_demo": true,
+        "price": true
+      },
+      "observed": {
+        "answer": "เปลี่ยนหน้าจอ iPhone 13 ทางร้านประเมินเบื้องต้นเริ่มต้น 3,200 บาทครับ ราคาสุทธิจะขึ้นกับผลตรวจรุ่น อาการ และอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะแจ้งราคาใหม่ให้คุณอนุมัติก่อนเริ่มซ่อมครับ  \nขอทราบอาการหน้าจอเพิ่มเติมสักอย่างได้ไหมครับ",
+        "sources": [
+          {
+            "label": "f20de564201d-shop.md",
+            "id": "1"
+          },
+          {
+            "label": "d886d6402ee6-slot-3.json",
+            "id": "2"
+          },
+          {
+            "label": "68dcf7d8dd34-slot-2.json",
+            "id": "3"
+          },
+          {
+            "label": "3159e7a499a0-slot-1.json",
+            "id": "4"
+          },
+          {
+            "label": "42e0e4c203f7-slot-4.json",
+            "id": "5"
+          }
+        ],
+        "rag_used": true,
+        "timings": {
+          "retrieval_ms": 1603,
+          "generation_ms": 1379,
+          "total_ms": 2984
+        },
+        "cache": {
+          "answer": false,
+          "vision": false,
+          "retrieval": false
+        },
+        "kb_version": "plimo-estimate-v3",
+        "conversation_id": null
+      }
+    },
+    {
+      "case": "repeat",
+      "input": "เปลี่ยนหน้าจอ iPhone 13 ราคาเท่าไร",
+      "http_status": 200,
+      "checks": {
+        "transport": true,
+        "rag": true,
+        "no_demo": true,
+        "price": true,
+        "cache": true
+      },
+      "observed": {
+        "answer": "เปลี่ยนหน้าจอ iPhone 13 ทางร้านประเมินเบื้องต้นเริ่มต้น 3,200 บาทครับ ราคาสุทธิจะขึ้นกับผลตรวจรุ่น อาการ และอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะแจ้งราคาใหม่ให้คุณอนุมัติก่อนเริ่มซ่อมครับ  \nขอทราบอาการหน้าจอเพิ่มเติมสักอย่างได้ไหมครับ",
+        "sources": [
+          {
+            "label": "f20de564201d-shop.md",
+            "id": "1"
+          },
+          {
+            "label": "d886d6402ee6-slot-3.json",
+            "id": "2"
+          },
+          {
+            "label": "68dcf7d8dd34-slot-2.json",
+            "id": "3"
+          },
+          {
+            "label": "3159e7a499a0-slot-1.json",
+            "id": "4"
+          },
+          {
+            "label": "42e0e4c203f7-slot-4.json",
+            "id": "5"
+          }
+        ],
+        "rag_used": true,
+        "timings": {
+          "total_ms": 1
+        },
+        "cache": {
+          "answer": true,
+          "vision": false,
+          "retrieval": false
+        },
+        "kb_version": "plimo-estimate-v3",
+        "conversation_id": null
+      }
+    },
+    {
+      "case": "parts",
+      "input": "ถ้าต้องซื้ออะไหล่เพิ่ม ต้องจ่ายเพิ่มโดยไม่แจ้งผมหรือเปล่า",
+      "http_status": 200,
+      "checks": {
+        "transport": true,
+        "rag": true,
+        "no_demo": true,
+        "approval": true
+      },
+      "observed": {
+        "answer": "ไม่ครับ ทางร้านจะไม่คิดค่าใช้จ่ายเพิ่มโดยไม่แจ้งก่อน หากตรวจพบว่าต้องใช้อะไหล่หรือมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้คุณอนุมัติก่อนเริ่มซ่อมครับ  \nรบกวนแจ้งรุ่นเต็มของเครื่องกับอาการหน่อยครับ",
+        "sources": [
+          {
+            "label": "f20de564201d-shop.md",
+            "id": "1"
+          },
+          {
+            "label": "37ee312e2f27-slot-6.json",
+            "id": "2"
+          },
+          {
+            "label": "900d22ec503d-slot-5.json",
+            "id": "3"
+          },
+          {
+            "label": "2688c06ca5f9-slot-7.json",
+            "id": "4"
+          },
+          {
+            "label": "68dcf7d8dd34-slot-2.json",
+            "id": "5"
+          }
+        ],
+        "rag_used": true,
+        "timings": {
+          "retrieval_ms": 1776,
+          "generation_ms": 1645,
+          "total_ms": 3424
+        },
+        "cache": {
+          "answer": false,
+          "vision": false,
+          "retrieval": false
+        },
+        "kb_version": "plimo-estimate-v3",
+        "conversation_id": null
+      }
+    },
+    {
+      "case": "pro_max",
+      "input": "เปลี่ยนหน้าจอ iPhone 13 Pro Max ราคาเดียวกับรุ่นธรรมดาไหม",
+      "http_status": 200,
+      "checks": {
+        "transport": true,
+        "rag": true,
+        "no_demo": true
+      },
+      "observed": {
+        "answer": "ทางร้านขอแจ้งว่า iPhone 13 Pro Max ต้องประเมินแยก ไม่ใช้ราคาเดียวกับรุ่นธรรมดาโดยอัตโนมัติครับ ราคาเปลี่ยนหน้าจอของรุ่น Pro Max ต้องตรวจเครื่องก่อนเพื่อยืนยันราคาสุทธิ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ  \nขอทราบอาการหน้าจอของเครื่องเพิ่มเติมได้ไหมครับ",
+        "sources": [
+          {
+            "label": "f20de564201d-shop.md",
+            "id": "1"
+          },
+          {
+            "label": "96f81b6fbf58-slot-8.json",
+            "id": "2"
+          },
+          {
+            "label": "d886d6402ee6-slot-3.json",
+            "id": "3"
+          },
+          {
+            "label": "68dcf7d8dd34-slot-2.json",
+            "id": "4"
+          },
+          {
+            "label": "3159e7a499a0-slot-1.json",
+            "id": "5"
+          }
+        ],
+        "rag_used": true,
+        "timings": {
+          "retrieval_ms": 1571,
+          "generation_ms": 1457,
+          "total_ms": 3030
+        },
+        "cache": {
+          "answer": false,
+          "vision": false,
+          "retrieval": false
+        },
+        "kb_version": "plimo-estimate-v3",
+        "conversation_id": null
+      }
+    },
+    {
+      "case": "warranty",
+      "input": "ซ่อมแล้วรับประกันกี่วันครับ",
+      "http_status": 200,
+      "checks": {
+        "transport": true,
+        "rag": true,
+        "no_demo": true
+      },
+      "observed": {
+        "answer": "ทางร้านยังไม่มีข้อมูลยืนยันเรื่องเงื่อนไขรับประกันหลังซ่อมครับ ขอให้ทางร้านยืนยันรายละเอียดนี้เพิ่มเติมครับ  \nหากสะดวก รบกวนแจ้งรุ่นเต็มหรืออาการที่ซ่อมครับ",
+        "sources": [
+          {
+            "label": "f20de564201d-shop.md",
+            "id": "1"
+          },
+          {
+            "label": "35f29824bbaf-slot-9.json",
+            "id": "2"
+          },
+          {
+            "label": "37ee312e2f27-slot-6.json",
+            "id": "3"
+          },
+          {
+            "label": "900d22ec503d-slot-5.json",
+            "id": "4"
+          },
+          {
+            "label": "2688c06ca5f9-slot-7.json",
+            "id": "5"
+          }
+        ],
+        "rag_used": true,
+        "timings": {
+          "retrieval_ms": 2278,
+          "generation_ms": 1200,
+          "total_ms": 3482
+        },
+        "cache": {
+          "answer": false,
+          "vision": false,
+          "retrieval": false
+        },
+        "kb_version": "plimo-estimate-v3",
+        "conversation_id": null
+      }
+    }
+  ]
+}

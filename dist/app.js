@@ -20,10 +20,10 @@ const memberReady=fetch('/api/auth/me').then(r=>r.ok?r.json():null).then(async d
   }
 }).catch(()=>{conversationId=null;}).finally(()=>{memberLoading=false;update();});
 let demoCatalog=[];
-const catalogReady=fetch('catalog.json').then(r=>r.ok?r.json():[]).then(items=>{demoCatalog=items.filter(i=>i.demo===true);}).catch(()=>{});
+const catalogReady=fetch('catalog.json').then(r=>r.ok?r.json():[]).then(items=>{demoCatalog=items.filter(i=>i.confirmed===true||i.demo===true);}).catch(()=>{});
 const ready = fetch('/api/health').then(r => r.ok ? r.json() : null).then(data => {
   live = data?.configured === true;
-  if (live) $('.composer-note').textContent = 'ผู้ช่วยใช้ข้อมูลร้านและราคาสาธิต · ภาพใช้ประเมินเบื้องต้น';
+  if (live) $('.composer-note').textContent = 'ผู้ช่วยร้าน Plimo · ราคาประเมินเบื้องต้น · ภาพใช้ประเมินเบื้องต้น';
 }).catch(() => { live = false; });
 const objectUrls = new Set();
 function imageUrl(file) { const url = URL.createObjectURL(file); objectUrls.add(url); return url; }
@@ -80,19 +80,19 @@ function message(role, text, images = []) {
 function scrollToEnd() { const area = $('.workspace'); area.scrollTop = area.scrollHeight; }
 function demoReply(text, imageCount) {
   if (!imageCount && /\bPLM-\d+\b|เคสของฉัน|สถานะ.{0,20}(เคส|ซ่อม|เครื่อง)|(เคส|งานซ่อม).{0,20}(ถึงไหน|สถานะ)/i.test(text)) return 'กรุณาเข้าสู่ระบบสมาชิกเพื่อถามสถานะเคสของคุณครับ ระบบเคสใช้งานผ่านเว็บที่เชื่อม backend เท่านั้น';
-  if (imageCount) return 'ได้รับภาพ ' + imageCount + ' ภาพแล้วครับ\n\nตอนนี้เป็นโหมดสาธิตหน้าเว็บ จึงยังไม่ได้วิเคราะห์ภาพด้วย AI กรุณาระบุรุ่น iPhone และเล่าอาการเพิ่มเติมได้เลยครับ\n\nPlimo รับ iPhone 11–17 รวม Pro / Pro Max และตรวจเช็คฟรีที่ร้าน';
+  if (imageCount) return 'ได้รับภาพ ' + imageCount + ' ภาพแล้วครับ\n\nตอนนี้ผู้ช่วย AI ยังไม่เชื่อมต่อ จึงยังไม่ได้วิเคราะห์ภาพ กรุณาระบุรุ่น iPhone และเล่าอาการเพิ่มเติมได้เลยครับ\n\nPlimo รับ iPhone 11–17 รวม Pro / Pro Max และตรวจเช็คฟรีที่ร้าน';
   if (/เปิด|ปิด|กี่โมง|เวลา|พุธ|เช็คฟรี/.test(text)) return 'ร้านเปิด 10:00–20:00 น. ทุกวัน ยกเว้นวันพุธครับ\n\nตรวจเช็คฟรีที่ร้าน และรับซ่อม iPhone 11–17 รวม Pro / Pro Max';
-  if (/ประกัน|ส่วนลด/.test(text)) return 'ยังไม่มีเงื่อนไขรับประกันหรือส่วนลดที่ร้านยืนยันครับ ราคาในแค็ตตาล็อกเป็นข้อมูลสาธิตเท่านั้น';
+  if (/ประกัน|ส่วนลด/.test(text)) return 'ขอให้ทางร้านยืนยันเงื่อนไขรับประกันหรือส่วนลดเพิ่มเติมครับ';
   if (/ราคา|เท่าไร|เท่าไหร่|บาท|หน้าจอ|แบตเตอรี่|สายชาร์จ|ฟิล์ม|เคส|สินค้า|บริการ/.test(text)) {
-    if (/จอง|ซื้อเลย|ชำระ/.test(text)) return 'รายการและราคาเป็นข้อมูลสาธิตครับ ยังรับจองหรือชำระเงินไม่ได้ ต้องยืนยันกับร้านก่อน';
-    if (/pro|โปร/i.test(text)) return 'ราคาในรายการหน้าจอและแบตเตอรี่ตัวอย่างระบุเฉพาะรุ่นปกติครับ ยังไม่มีราคาสาธิตเฉพาะ Pro / Pro Max ต้องสอบถามร้านเพื่อยืนยันราคา';
+    if (/จอง|ซื้อเลย|ชำระ/.test(text)) return 'กรุณายืนยันรายละเอียดกับร้านก่อนครับ สามารถส่งคำขอซ่อมผ่านบัญชีสมาชิกได้ เว็บยังไม่มีการชำระเงิน';
+    if (/pro|โปร/i.test(text)) return 'ราคาของรุ่นปกติใช้กับ Pro / Pro Max โดยอัตโนมัติไม่ได้ครับ กรุณาแจ้งรุ่นเต็มและอาการเพื่อประเมินเพิ่มเติม';
     const model=text.match(/(?:iphone|ไอโฟน)\s*(1[1-7])/i)?.[1];
     const term=['หน้าจอ','แบตเตอรี่','สายชาร์จ','ฟิล์ม','เคส','กล้อง','ลำโพง','ช่องชาร์จ'].find(t=>text.includes(t));
     const matches=demoCatalog.filter(i=>(!term||i.name.includes(term))&&(!model||i.models.some(m=>m==='iPhone '+model||m.includes('11–17'))));
-    if (!matches.length) return 'ยังไม่มีรายการและราคาสาธิตที่ตรงกับคำถามครับ กรุณาระบุรุ่นและบริการ หรือสอบถามร้านเพื่อขอราคาจริง';
-    return 'ราคาต่อไปนี้เป็นข้อมูลสาธิต ไม่ใช่ราคาเสนอจริงจากร้านครับ\n\n'+matches.map(i=>i.name+' · '+(i.price_type==='starting'?'เริ่มต้น ':'')+new Intl.NumberFormat('th-TH').format(i.price)+' บาท').join('\n')+'\n\nราคาสาธิต ต้องยืนยันรุ่น อาการ เงื่อนไข และราคากับร้านก่อน ไม่มีการจองหรือชำระเงินในเว็บนี้';
+    if (!matches.length) return 'ขอทราบรุ่นเต็มและบริการที่ต้องการครับ เพื่อให้ทางร้านประเมินราคาเพิ่มเติม';
+    return 'ราคาประเมินเบื้องต้นครับ\n\n'+matches.map(i=>i.name+' · '+(i.price_type==='starting'?'เริ่มต้น ':'')+new Intl.NumberFormat('th-TH').format(i.price)+' บาท').join('\n')+'\n\nราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่ม ทางร้านจะเสนอราคาใหม่ให้คุณอนุมัติก่อนเริ่มซ่อมครับ';
   }
-  return 'แจ้งรุ่น iPhone และอาการที่พบได้เลยครับ ถ้ามีภาพตัวเครื่อง หน้าจอ หรือข้อความแจ้งเตือน สามารถกด + เพื่อแนบภาพได้\n\nPlimo รับ iPhone 11–17 รวม Pro / Pro Max และตรวจเช็คฟรีที่ร้าน\n\nนี่เป็นคำตอบสาธิต ยังไม่ได้ตรวจสอบอาการด้วย AI ครับ';
+  return 'แจ้งรุ่น iPhone และอาการที่พบได้เลยครับ ถ้ามีภาพตัวเครื่อง หน้าจอ หรือข้อความแจ้งเตือน สามารถกด + เพื่อแนบภาพได้\n\nPlimo รับ iPhone 11–17 รวม Pro / Pro Max และตรวจเช็คฟรีที่ร้าน\n\nตอนนี้ผู้ช่วย AI ยังไม่เชื่อมต่อ จึงเป็นคำตอบอัตโนมัติจากข้อมูลร้านครับ';
 }
 async function submit() {
   if (busy || memberLoading || (!input.value.trim() && !files.length)) return;
@@ -114,7 +114,7 @@ async function submit() {
       result = data;
       if(loggedMember)conversationId=data.conversation_id||conversationId;
     } else {
-      loading.textContent = 'กำลังเตรียมคำตอบสาธิต';
+      loading.textContent = 'กำลังค้นข้อมูลร้าน';
       await new Promise(resolve => setTimeout(resolve, 850));
       await catalogReady;
       result = {answer:demoReply(text, images.length),sources:[]};
@@ -122,7 +122,7 @@ async function submit() {
     if (turn !== generation) return;
     loading.remove(); const reply = message('assistant', result.answer);
     const source = document.createElement('p'); source.className = 'message-source';
-    source.textContent = result.case_used ? 'อ้างอิง: เคสของบัญชีคุณ · อ่านสถานะล่าสุดจากระบบ' : live ? (result.sources.length ? 'อ้างอิง: '+result.sources.map(s=>s.label.endsWith('shop.md')?'ข้อมูลร้าน Plimo':s.label.includes('demo-slot-')?'รายการและราคาสาธิต':'เอกสารอ้างอิง').join(' · ') : 'ยังไม่พบข้อมูลที่ยืนยัน') : 'โหมดสาธิต · ยังไม่ได้เชื่อมผู้ช่วย AI';
+    source.textContent = result.case_used ? 'อ้างอิง: เคสของบัญชีคุณ · อ่านสถานะล่าสุดจากระบบ' : live ? (result.sources.length ? 'อ้างอิง: '+[...new Set(result.sources.map(s=>s.label.endsWith('shop.md')?'ข้อมูลร้าน Plimo':s.label.includes('slot-')?'รายการและราคาประเมิน':'เอกสารอ้างอิง'))].join(' · ') : 'ยังไม่พบข้อมูลที่ยืนยัน') : 'คำตอบอัตโนมัติ · ผู้ช่วย AI ยังไม่เชื่อมต่อ';
     reply.append(source);
   } catch (err) {
     if (turn !== generation) return;

@@ -13,7 +13,7 @@ def catalog_documents(catalog, include_demo=False):
         if (item.get('confirmed') is True and not demo) or (demo and include_demo):
             if not item.get('name') or not item.get('description'):
                 raise ValueError('Catalog entries need name and description')
-            prefix = 'ข้อมูลสาธิตเท่านั้น ต้องบอกว่าเป็นราคาสาธิต ไม่ใช่ราคาจริงของร้าน ไม่รับจองหรือยืนยันสต็อก\n' if demo else 'ข้อมูลที่ร้านยืนยัน\n'
+            prefix = 'ข้อมูลสาธิตเท่านั้น ต้องบอกว่าเป็นราคาสาธิต ไม่ใช่ราคาจริงของร้าน ไม่รับจองหรือยืนยันสต็อก\n' if demo else ('ราคาประเมินเบื้องต้นที่เจ้าของอนุญาต ต้องตรวจเครื่องก่อนยืนยันราคาสุทธิและให้ลูกค้าอนุมัติค่าใช้จ่ายเพิ่มเติมก่อนเริ่มซ่อม\n' if item.get('price_status') == 'estimate' else 'ข้อมูลที่ร้านยืนยัน\n')
             texts.append(prefix + json.dumps(item, ensure_ascii=False))
             sources.append(('demo-' if demo else '') + item['id'] + '.json')
     return texts, sources

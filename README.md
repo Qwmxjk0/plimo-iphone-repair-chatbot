@@ -1,8 +1,20 @@
+## นโยบายคำตอบและราคา — อัปเดต 10 ตุลาคม 2026
+
+เจ้าของอนุญาตให้ราคา 16 รายการเดิมเป็น **ราคาประเมินเบื้องต้น** ไม่ใช่ราคาสุทธิ ต้องตรวจเครื่อง รุ่น และอะไหล่ก่อนยืนยัน ค่าใช้จ่ายเพิ่มต้องส่งใบเสนอราคาใหม่ให้ลูกค้าอนุมัติก่อนเริ่มซ่อม สินค้าต้องยืนยันสต็อกก่อนซื้อ ไม่มีการชำระเงินผ่านเว็บ
+
+ปรับบทบาท น้ำเสียง และตัวอย่างคำตอบผ่าน prompt `thai-shop-estimate-v4` ไม่ได้ fine-tune น้ำหนักโมเดล ใช้คลังใหม่ `plimo-estimate-v3` แยกจากคลังสาธิตเดิม และเปลี่ยน cache version ประวัติบัญชีตัวอย่างยังคงมีป้ายตัวอย่างเพื่อแยกจากงานลูกค้าจริง
+
+ทดสอบ: ถามราคา iPhone 13 → ประเมินเริ่มต้น 3,200 บาท + ตรวจเครื่องก่อนยืนยัน; ถาม Pro Max → ไม่ใช้ราคาเดียวกับรุ่นปกติ; ถามค่าอะไหล่เพิ่ม → แจ้งและขออนุมัติราคาใหม่; ถามรับประกัน → ไม่แต่งเงื่อนไข
+
+ผลตรวจรอบนี้: 27 tests ผ่าน และทดสอบ OpenAI + RAG จริง 6 กรณี ดู `qa/results/shop-tone-results.md` และ `shop-tone-live.json`
+
+หมายเหตุ: เอกสารผลทดสอบราคาเดิมเป็นประวัติการพัฒนาก่อนนโยบายนี้ ให้ใช้นโยบายปัจจุบันด้านบนสำหรับการทดสอบราคา
+
 # Plimo — เว็บร้านซ่อม iPhone และ Chatbot RAG
 
 เว็บร้านหน้าเดียวที่เน้น Chatbot ภาษาไทย รองรับข้อความและภาพ พร้อมระบบสมาชิก ประวัติแชท และเคสซ่อมที่อ้างอิงบทสนทนา มีหน้า Admin สำหรับติดตามและอัปเดตงานซ่อม
 
-> สำหรับการตรวจงาน: ใช้ **http://127.0.0.1:8081/** เพื่อทดสอบระบบเต็มบน Docker local ส่วนเว็บ `chatgpt.site` เป็น static preview และไม่ได้ deploy ระบบสมาชิกหรือ RAG backend ไว้ที่นั่น รายการสินค้า/บริการและราคา 16 รายการเป็นข้อมูลสาธิต ไม่ใช่ราคาที่ร้านยืนยัน
+> สำหรับการตรวจงาน: ใช้ **http://127.0.0.1:8081/** เพื่อทดสอบระบบเต็มบน Docker local ส่วนเว็บ `chatgpt.site` เป็น static preview และไม่ได้ deploy ระบบสมาชิกหรือ RAG backend ไว้ที่นั่น รายการสินค้า/บริการและราคา 16 รายการเป็นราคาประเมินเบื้องต้น ต้องตรวจเครื่องก่อนยืนยันราคาสุทธิ
 
 ## เริ่มทดสอบสำหรับอาจารย์
 
@@ -15,10 +27,10 @@
    docker compose --profile rag up --build -d
    ```
 
-3. สำหรับ workspace ใหม่ ให้สร้างคลังข้อมูลสาธิตแล้วรอ LightRAG ประมวลผลเอกสารเสร็จก่อนทดสอบ:
+3. สำหรับ workspace ใหม่ ให้สร้างคลังข้อมูลราคาประเมินแล้วรอ LightRAG ประมวลผลเอกสารเสร็จก่อนทดสอบ:
 
    ```sh
-   docker compose exec api python ingest.py --include-demo
+   docker compose exec api python ingest.py
    ```
 
    ถ้าคลังเดิมประมวลผลเสร็จแล้ว ไม่ต้อง ingest ซ้ำเพื่อทดสอบแต่ละครั้ง
@@ -44,15 +56,15 @@
 
 | ID | Feature | วิธีทดสอบ | ผลที่คาดหวัง |
 |---|---|---|---|
-| F01 | เว็บร้านหน้าเดียวและแค็ตตาล็อก | เปิดเว็บ เลื่อนไปสินค้า/บริการ | มี 16 รายการพร้อมภาพ ราคา และป้ายข้อมูลสาธิต |
+| F01 | เว็บร้านหน้าเดียวและแค็ตตาล็อก | เปิดเว็บ เลื่อนไปสินค้า/บริการ | มี 16 รายการพร้อมภาพ ราคา และป้ายราคาประเมินเบื้องต้น |
 | F02 | ค้นหาและกรองรายการ | ค้น `แบตเตอรี่` เลือกบริการ/สินค้า และเปิดรายละเอียด | แสดงเฉพาะรายการที่ตรงคำค้น/ประเภท รายละเอียดและราคาตรงรายการ |
-| F03 | Chatbot ภาษาไทยด้วย RAG + OpenAI | เมื่อ live backend พร้อม ถาม `เปลี่ยนจอ iPhone 13 เท่าไร` | ตอบจากคลังข้อมูลว่าเป็นราคาสาธิตเริ่มต้น 3,200 บาท พร้อมแหล่งข้อมูล |
+| F03 | Chatbot ภาษาไทยด้วย RAG + OpenAI | เมื่อ live backend พร้อม ถาม `เปลี่ยนจอ iPhone 13 เท่าไร` | ตอบจากคลังข้อมูลว่าเป็นราคาประเมินเบื้องต้นเริ่มต้น 3,200 บาท พร้อมแหล่งข้อมูล |
 | F04 | ขอบเขตข้อมูลและรุ่น | ถาม `iPhone 13 Pro Max ใช้ราคาเดียวกับ iPhone 13 ได้ไหม` | ไม่ใช้ราคาของรุ่นปกติแทน Pro Max และแจ้งว่าราคาเฉพาะรุ่นยังไม่มีข้อมูล |
 | F05 | แนบภาพและข้อความ | แนบ JPEG/PNG/WebP พร้อมถามอาการ ลองลบภาพก่อนส่ง | มีภาพ preview และลบได้ เมื่อ live backend พร้อม ระบบส่งภาพให้ OpenAI วิเคราะห์ก่อนค้น RAG; คุณภาพคำตอบต้องตรวจด้วยคน |
 | F06 | Cache ลดคำขอซ้ำ | รัน `python qa/run_price_smoke.py` กับ local backend ที่พร้อม | ดูผลเวลาและ cache flag ในไฟล์ผลลัพธ์ คำขอซ้ำที่เข้าเงื่อนไขใช้ answer cache; คำถามซ้ำไม่ได้แคชเสมอเมื่อบริบทเปลี่ยน |
 | F07 | สมัคร/เข้าสู่ระบบ/ออกจากระบบ | สมัครบัญชีใหม่ แล้วออกและเข้าใหม่ | บัญชีใหม่เป็น user และเข้าใช้งานข้อมูลของตัวเองได้ |
 | F08 | ประวัติแชทของสมาชิก | เข้าด้วย `demo_user` → บัญชี → ประวัติแชท → เปิดบทสนทนา | เห็น 3 บทสนทนาตัวอย่าง เปิดข้อความเก่าในช่องแชทและคุยต่อได้ แชทที่สำเร็จหลัง login เก็บในบัญชี |
-| F09 | ส่งเคสอ้างอิงบทสนทนา | เลือกประวัติ → ใช้บทสนทนานี้ส่งเคส หรือกดส่งเคสซ่อมในแชท แล้วกรอกอาการ | ได้เลข `PLM-xxxxx` พร้อมรุ่น/อาการและการเชื่อมบทสนทนา เป็นเคสในระบบสาธิต ไม่ใช่ยืนยันจองจริง |
+| F09 | ส่งเคสอ้างอิงบทสนทนา | เลือกประวัติ → ใช้บทสนทนานี้ส่งเคส หรือกดส่งเคสซ่อมในแชท แล้วกรอกอาการ | ได้เลข `PLM-xxxxx` พร้อมรุ่น/อาการและการเชื่อมบทสนทนา เป็นคำขอซ่อม ยังไม่ยืนยันรับเครื่องหรือนัดหมาย |
 | F10 | สมาชิกติดตามเคส | เปิดงานซ่อมของฉัน → ประวัติสถานะ | เห็นสถานะ ราคาเสนอเมื่อมี และ timeline ที่เปิด–พับได้ |
 | F11 | Admin จัดการเคส | เข้าด้วย `demo_admin` เปิด `/admin.html` เลือกเคส เปลี่ยนสถานะตามขั้นตอนและกรอกหมายเหตุ | จำนวนเคส/สถานะอัปเดต เปิดแชทที่แนบได้ และบันทึกเหตุการณ์การเปลี่ยนสถานะ |
 | F12 | แยกสิทธิ์สมาชิก/Admin | ใช้บัญชี user เปิด Admin และเทียบประวัติระหว่างสองสมาชิก | API ปฏิเสธสิทธิ์ Admin ของ user สมาชิกแต่ละคนเห็นเฉพาะข้อมูลของตน |
@@ -89,14 +101,14 @@
 
 - ประวัติเก็บข้อความและจำนวนภาพ ไม่เก็บไฟล์ภาพต้นฉบับถาวร
 - ยังไม่มีรีเซ็ตรหัสผ่าน ระบบแจ้งเตือน ชำระเงิน หรือจองซ่อมจริง
-- สินค้า/บริการและราคาเป็นข้อมูลสาธิต ยังไม่มีข้อมูลจริงครบจากร้าน
+- ราคาเป็นการประเมินเบื้องต้น ยังไม่มีที่อยู่ ช่องทางติดต่อ เงื่อนไขรับประกัน หรือชนิดอะไหล่ที่ยืนยัน
 - Backend ยังไม่ได้ deploy ออนไลน์พร้อมเว็บ static
 
 ---
 
 # รายละเอียดการติดตั้งและการทำงานเดิม
 
-A single storefront with a floating chat panel. `chat.html` is an internal embedded widget, not a separate customer navigation page. Thai UI, 16 catalog slots, search/type filters, item details, shop hours, image previews, remove attachments, paste/drop, and responsive chat. Catalog now has 16 explicitly labeled demo items with illustrative prices, not confirmed shop offers.
+A single storefront with a floating chat panel. `chat.html` is an internal embedded widget, not a separate customer navigation page. Thai UI, 16 catalog slots, search/type filters, item details, shop hours, image previews, remove attachments, paste/drop, and responsive chat. Catalog has 16 owner-approved preliminary estimates; final repair quotes require inspection and customer approval.
 
 ## Preview without API keys
 
@@ -115,7 +127,7 @@ Use JPEG, PNG or WebP, up to 3 images/10 MB each. Server checks decoding, pixel 
 
 ## Real catalog data
 
-Edit `dist/catalog.json`: keep a stable `id`, set `name`, `kind` (`service` or `product`), `description`, `price` (number in THB or null), `models`, `terms`, and `confirmed: true` only after shop approval. Only confirmed items enter RAG by default. Use ingest.py --include-demo to index labeled examples in the separate demo workspace. `knowledge/shop.md` contains the actual facts supplied by the user. The 16 demo records have confirmed=false and demo=true; do not present them as actual shop services.
+Edit `dist/catalog.json`: keep a stable `id`, set `name`, `kind` (`service` or `product`), `description`, `price` (number in THB or null), `models`, `terms`, and `confirmed: true` only after shop approval. Only confirmed items enter RAG by default. Demo records remain opt-in through --include-demo in a separate demonstration workspace. `knowledge/shop.md` contains the actual facts supplied by the user. The 16 current records use confirmed=true, demo=false and price_status=estimate, following owner approval on 2026-10-10; these are not final quotes.
 
 When changing knowledge, update `KB_VERSION` and use a fresh named LightRAG workspace/volume (preserve the old volume), then ingest again; changing a cache version alone does not delete obsolete source documents from LightRAG. Rebuild API and web after catalog edits. Pin `LIGHTRAG_IMAGE` to a tested release/digest after the first live integration; current default follows the official latest image and its contract may change.
 
@@ -124,17 +136,17 @@ For production Docker hosting, place an HTTPS reverse proxy in front of the loop
 Live OpenAI requests and LightRAG indexing require a valid key and API billing. Live text RAG and answer-cache requests have been tested with OpenAI. The full live image-quality suite remains pending; see qa/results/price-cache-model.json and qa/results/membership-results.md.
 # ภาพประกอบและหลักฐานทดสอบ
 
-การ์ด 16 ช่องใช้ภาพการ์ตูนใหม่ 3 แบบจาก built-in ImageGen ใน `dist/assets/` เป็นภาพประกอบทั่วไป รายการและราคาเป็นสาธิต เข้า RAG ได้ด้วย --include-demo และต้องคงป้ายสาธิต ดู prompt ที่ `qa/art-prompts.md`
+การ์ด 16 ช่องใช้ภาพการ์ตูนใหม่ 3 แบบจาก built-in ImageGen ใน `dist/assets/` เป็นภาพประกอบทั่วไป รายการใช้ราคาประเมินเบื้องต้นและเข้า RAG ได้โดยไม่ใช้ --include-demo ดู prompt ที่ `qa/art-prompts.md`
 
 ชุดทดสอบ 10 คำถาม + 5 ภาพ + 5 ความปลอดภัย: `qa/test-plan.md`; ผลจริงที่เก็บ: `qa/results/live-results.json`; สถานะ stack: `qa/stack-audit.md`; แผนภาพ PNG/SVG: `qa/diagrams/stack-flow.*`
 
 
 ## Demo price catalog
 
-See qa/demo-catalog.md. The current Compose uses a fresh rag-data-demo-v2 volume and KB_VERSION=plimo-demo-v2. Previous volumes are preserved. Index with docker compose exec api python ingest.py --include-demo, then wait for document processing. Never relabel examples as confirmed shop prices.
+See qa/demo-catalog.md. The current Compose uses a fresh rag-data-estimate-v3 volume and KB_VERSION=plimo-estimate-v3. Previous volumes are preserved. Index with docker compose exec api python ingest.py, then wait for document processing. Preserve estimate labels; never promise a final price before inspection.
 # Members and repair cases (local MVP)
 
-Members can register, sign in, reopen their own text chat history and submit repair cases with a linked conversation. Admins have a separate `admin.html` dashboard with status counts, allowed transitions, quoted demo price, notes and audit timeline. API ownership and roles are checked server-side; session tokens are hashed in SQLite, passwords use salted PBKDF2, and cross-origin writes are rejected. SQLite persists in the `member-data` Docker volume. RAG does not index member records.
+Members can register, sign in, reopen their own text chat history and submit repair cases with a linked conversation. Admins have a separate `admin.html` dashboard with status counts, allowed transitions, quoted price, notes and audit timeline. API ownership and roles are checked server-side; session tokens are hashed in SQLite, passwords use salted PBKDF2, and cross-origin writes are rejected. SQLite persists in the `member-data` Docker volume. RAG does not index member records.
 
 Run `docker compose exec api python seed_demo.py` for the explicitly requested example data and accounts; see `qa/member-demo.md`. Seeding is idempotent. The original bootstrap admin password is local-only in ignored `.admin-login.txt` / `.env`; changing the env does not reset an existing account password. Public registration always creates role=user.
 
