@@ -26,3 +26,9 @@ When changing knowledge, update `KB_VERSION` and use a fresh named LightRAG work
 For production Docker hosting, place an HTTPS reverse proxy in front of the loopback web port and set `COOKIE_SECURE=true`. Redis and LightRAG remain internal. API requests are limited at nginx and Redis; a per-session lock prevents overlapping chat turns. The hosted static demo does not connect to your localhost backend.
 
 Live OpenAI requests and LightRAG indexing require a valid key and API billing. No paid live requests were made during prototype development.
+# ภาพประกอบและหลักฐานทดสอบ
+
+การ์ด 16 ช่องใช้ภาพการ์ตูนใหม่ 3 แบบจาก built-in ImageGen ใน `dist/assets/` เป็นภาพประกอบทั่วไป รายการยังรอข้อมูลร้านและไม่ใส่ลง RAG ดู prompt ที่ `qa/art-prompts.md`
+
+ชุดทดสอบ 10 คำถาม + 5 ภาพ + 5 ความปลอดภัย: `qa/test-plan.md`; ผลจริงที่เก็บ: `qa/results/live-results.json`; สถานะ stack: `qa/stack-audit.md`; แผนภาพ PNG/SVG: `qa/diagrams/stack-flow.*`
+

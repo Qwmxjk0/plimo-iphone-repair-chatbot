@@ -7,7 +7,11 @@ function render() {
   for (const item of selected) {
     const card = document.createElement('article'); card.className='catalog-card';
     const art = document.createElement('div'); art.className='catalog-art';
-    art.innerHTML='<span class="slot-number">PLIMO / '+item.id.slice(5).padStart(2,'0')+'</span><svg viewBox="0 0 50 62" aria-hidden="true"><rect x="11" y="3" width="28" height="56" rx="7"/><path d="M21 8h8M23 54h4M17 22h16M17 29h11M17 36h14"/></svg><span class="art-placeholder-label">พื้นที่สำหรับภาพจริง</span>';
+    const number=document.createElement('span');number.className='slot-number';number.textContent='PLIMO / '+item.id.slice(5).padStart(2,'0');
+    const illustration=document.createElement('img');illustration.className='catalog-illustration';illustration.loading='lazy';illustration.decoding='async';illustration.width=1448;illustration.height=1086;
+    const asset=item.kind==='product'?'accessories':Number(item.id.slice(5))%2?'repair':'phone';
+    illustration.src='assets/'+asset+'.png';illustration.alt=item.kind==='product'?'ภาพการ์ตูนโทรศัพท์และอุปกรณ์ประกอบ':'ภาพการ์ตูนโทรศัพท์และเครื่องมือซ่อม';
+    const label=document.createElement('span');label.className='art-placeholder-label';label.textContent='ภาพประกอบ';art.append(illustration,number,label);
     const body=document.createElement('div'); body.className='catalog-body';
     const badge=document.createElement('span'); badge.className='pending-badge'; badge.textContent=item.confirmed?'ข้อมูลร้านยืนยัน':'รอข้อมูลจริง';
     const name=document.createElement('h3'); name.textContent=item.confirmed?item.name:item.name+' · '+(item.kind==='service'?'ช่องบริการ':'ช่องสินค้า');
