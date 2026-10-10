@@ -1,66 +1,117 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1000" viewBox="0 0 1500 1000">
-<rect width="1500" height="1000" fill="#fafbf8"/>
-<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#607669"/></marker></defs>
-<text x="40" y="59" font-family="Arial,sans-serif" font-size="34" fill="#243128">PLIMO • Storefront + Thai multimodal RAG</text>
-<text x="40" y="97" font-family="Arial,sans-serif" font-size="20" fill="#243128">Implementation audit • 10 Oct 2026 • Green: running / Amber: vision not yet verified</text>
-<rect x="35" y="140" width="310" height="350" rx="16" fill="none" stroke="#bac5b8" stroke-dasharray="8 7" stroke-width="2"/>
-<text x="53" y="178" font-family="Arial,sans-serif" font-size="22" fill="#243128">Member + admin browser</text>
-<rect x="55" y="205" width="270" height="105" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
-<text x="71" y="241" font-family="Arial,sans-serif" font-size="22" fill="#243128">Storefront / admin UI</text>
-<text x="71" y="268" font-family="Arial,sans-serif" font-size="14" fill="#243128">16 demo items + example prices</text>
-<rect x="55" y="350" width="270" height="100" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
-<text x="71" y="386" font-family="Arial,sans-serif" font-size="22" fill="#243128">Chat + member portal</text>
-<text x="71" y="413" font-family="Arial,sans-serif" font-size="14" fill="#243128">Thai text + image uploads</text>
-<rect x="390" y="140" width="670" height="670" rx="16" fill="none" stroke="#bac5b8" stroke-dasharray="8 7" stroke-width="2"/>
-<text x="408" y="178" font-family="Arial,sans-serif" font-size="22" fill="#243128">Docker host • localhost:8081</text>
-<rect x="415" y="205" width="260" height="90" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
-<text x="431" y="241" font-family="Arial,sans-serif" font-size="22" fill="#243128">Nginx</text>
-<text x="431" y="268" font-family="Arial,sans-serif" font-size="14" fill="#243128">Static UI + /api proxy</text>
-<rect x="415" y="360" width="260" height="100" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
-<text x="431" y="396" font-family="Arial,sans-serif" font-size="22" fill="#243128">FastAPI</text>
-<text x="431" y="423" font-family="Arial,sans-serif" font-size="14" fill="#243128">Auth / ownership / RAG / cases</text>
-<rect x="765" y="205" width="265" height="95" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
-<text x="781" y="241" font-family="Arial,sans-serif" font-size="22" fill="#243128">Redis 7</text>
-<text x="781" y="268" font-family="Arial,sans-serif" font-size="14" fill="#243128">History + 3 cache layers</text>
-<rect x="765" y="360" width="265" height="100" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
-<text x="781" y="396" font-family="Arial,sans-serif" font-size="22" fill="#243128">LightRAG</text>
-<text x="781" y="423" font-family="Arial,sans-serif" font-size="14" fill="#243128">Retrieval + graph / vector index</text>
-<rect x="765" y="565" width="265" height="95" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
-<text x="781" y="601" font-family="Arial,sans-serif" font-size="22" fill="#243128">Persistent RAG volume</text>
-<text x="781" y="628" font-family="Arial,sans-serif" font-size="14" fill="#243128">Index + document storage</text>
-<rect x="415" y="565" width="260" height="95" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
-<text x="431" y="601" font-family="Arial,sans-serif" font-size="22" fill="#243128">ingest.py</text>
-<text x="431" y="628" font-family="Arial,sans-serif" font-size="14" fill="#243128">Shop facts + labeled demo</text>
-<rect x="765" y="685" width="265" height="100" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
-<text x="781" y="721" font-family="Arial,sans-serif" font-size="22" fill="#243128">SQLite member database</text>
-<text x="781" y="748" font-family="Arial,sans-serif" font-size="14" fill="#243128">Accounts / chats / cases / audit</text>
-<polyline points="675,445 715,445 715,735 765,735" fill="none" stroke="#607669" stroke-width="3" marker-end="url(#arrow)"/>
-<text x="55" y="612" font-family="Arial,sans-serif" font-size="17" fill="#243128">Shop facts + demo prices</text>
-<text x="55" y="644" font-family="Arial,sans-serif" font-size="14" fill="#243128">Personal records excluded from RAG</text>
-<rect x="1110" y="140" width="350" height="550" rx="16" fill="none" stroke="#bac5b8" stroke-dasharray="8 7" stroke-width="2"/>
-<text x="1128" y="178" font-family="Arial,sans-serif" font-size="22" fill="#243128">External • OpenAI API</text>
-<rect x="1130" y="235" width="310" height="100" rx="12" fill="#fff2d9" stroke="#b48639" stroke-width="2"/>
-<text x="1146" y="271" font-family="Arial,sans-serif" font-size="22" fill="#243128">Vision + answer model</text>
-<text x="1146" y="298" font-family="Arial,sans-serif" font-size="14" fill="#243128">Responses API • gpt-5.4-mini</text>
-<rect x="1130" y="465" width="310" height="100" rx="12" fill="#e2efdf" stroke="#598263" stroke-width="2"/>
-<text x="1146" y="501" font-family="Arial,sans-serif" font-size="22" fill="#243128">Embedding + extraction</text>
-<text x="1146" y="528" font-family="Arial,sans-serif" font-size="14" fill="#243128">text-embedding-3-small</text>
-<polyline points="325,400 365,400 365,250 415,250" fill="none" stroke="#607669" stroke-width="3" marker-end="url(#arrow)"/>
-<text x="215" y="526" font-family="Arial,sans-serif" font-size="16" fill="#243128">1. text / image</text>
-<polyline points="545,295 545,360" fill="none" stroke="#607669" stroke-width="3" marker-end="url(#arrow)"/>
-<text x="558" y="333" font-family="Arial,sans-serif" font-size="16" fill="#243128">2. request</text>
-<polyline points="675,385 715,385 715,250 765,250" fill="none" stroke="#607669" stroke-width="3" marker-end="url(#arrow)"/>
-<text x="680" y="288" font-family="Arial,sans-serif" font-size="16" fill="#243128">cache</text>
-<polyline points="675,425 765,425" fill="none" stroke="#607669" stroke-width="3" marker-end="url(#arrow)"/>
-<text x="681" y="465" font-family="Arial,sans-serif" font-size="16" fill="#243128">retrieve</text>
-<polyline points="675,400 700,400 700,330 1085,330 1085,285 1130,285" fill="none" stroke="#607669" stroke-width="3" marker-end="url(#arrow)"/>
-<text x="770" y="321" font-family="Arial,sans-serif" font-size="16" fill="#243128">Vision + grounded answer</text>
-<polyline points="1030,430 1085,430 1085,515 1130,515" fill="none" stroke="#607669" stroke-width="3" marker-end="url(#arrow)"/>
-<polyline points="545,565 545,505 900,505 900,460" fill="none" stroke="#607669" stroke-width="3" marker-end="url(#arrow)"/>
-<text x="690" y="534" font-family="Arial,sans-serif" font-size="16" fill="#243128">ingestion</text>
-<polyline points="900,460 900,565" fill="none" stroke="#607669" stroke-width="3" marker-end="url(#arrow)"/>
-<text x="911" y="544" font-family="Arial,sans-serif" font-size="16" fill="#243128">persist</text>
-<rect x="35" y="845" width="1425" height="120" rx="16" fill="none" stroke="#bac5b8" stroke-dasharray="8 7" stroke-width="2"/>
-<text x="53" y="883" font-family="Arial,sans-serif" font-size="22" fill="#243128">Hosted private Site • static preview only</text>
-<text x="55" y="919" font-family="Arial,sans-serif" font-size="21" fill="#243128">Published storefront does not deploy Docker, Redis, LightRAG or a live OpenAI backend.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1180" viewBox="0 0 1600 1180">
+<rect width="1600" height="1180" fill="#f6f7f3"/>
+<text x="40" y="59" font-family="Thonburi,Arial,sans-serif" font-size="34" fill="#24382d">PLIMO / Updated System Architecture</text>
+<text x="40" y="99" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">Members / Chat history / Conversation-linked cases / Admin / Thai text + image RAG</text>
+<text x="40" y="131" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#6e7d68">10 Oct 2026   |   Implemented local MVP   |   Arrows show requests / data access</text>
+<rect x="30" y="165" width="300" height="670" rx="14" fill="#f6f7f3" stroke="#c0c8ba" stroke-width="2"/>
+<text x="48" y="200" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">CUSTOMER / ADMIN</text>
+<rect x="50" y="235" width="260" height="130" rx="14" fill="#e8efe1" stroke="#829773" stroke-width="2"/>
+<text x="68" y="270" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">Storefront + Chat</text>
+<text x="68" y="300" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Single shop page</text>
+<text x="68" y="326" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">16 demo items / prices</text>
+<text x="68" y="352" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Thai text + up to 3 images</text>
+<rect x="50" y="410" width="260" height="155" rx="14" fill="#e8efe1" stroke="#829773" stroke-width="2"/>
+<text x="68" y="445" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">Member portal</text>
+<text x="68" y="475" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Login / register</text>
+<text x="68" y="501" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Own chat history + continue</text>
+<text x="68" y="527" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Create / track repair case</text>
+<text x="68" y="553" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Link chat / approve quote</text>
+<rect x="50" y="620" width="260" height="130" rx="14" fill="#e8efe1" stroke="#829773" stroke-width="2"/>
+<text x="68" y="655" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">Admin dashboard</text>
+<text x="68" y="685" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Role-checked access</text>
+<text x="68" y="711" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Case counts / linked chat</text>
+<text x="68" y="737" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Status + quote + audit</text>
+<rect x="365" y="165" width="810" height="670" rx="14" fill="#f6f7f3" stroke="#c0c8ba" stroke-width="2"/>
+<text x="383" y="200" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">DOCKER HOST / http://127.0.0.1:8081</text>
+<rect x="390" y="235" width="330" height="110" rx="14" fill="#e8efe1" stroke="#829773" stroke-width="2"/>
+<text x="408" y="270" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">Nginx</text>
+<text x="408" y="300" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Serves static UI</text>
+<text x="408" y="326" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Proxies /api to FastAPI</text>
+<rect x="390" y="410" width="330" height="205" rx="14" fill="#e8efe1" stroke="#829773" stroke-width="2"/>
+<text x="408" y="445" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">FastAPI</text>
+<text x="408" y="475" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Auth + per-user ownership</text>
+<text x="408" y="501" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Chat / image validation</text>
+<text x="408" y="527" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">RAG + grounded answer</text>
+<text x="408" y="553" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Case workflow + admin routes</text>
+<text x="408" y="579" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Saves successful member turns</text>
+<rect x="790" y="230" width="360" height="210" rx="14" fill="#e3eff0" stroke="#70999d" stroke-width="2"/>
+<text x="808" y="265" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">Redis 7 / temporary</text>
+<text x="808" y="295" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Answer cache: 30 minutes</text>
+<text x="808" y="321" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Retrieval cache: 1 hour</text>
+<text x="808" y="347" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Vision cache: 24 hours</text>
+<text x="808" y="373" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Recent chat context: 24 hours</text>
+<text x="808" y="399" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Rate limits + session lock</text>
+<rect x="790" y="490" width="360" height="115" rx="14" fill="#e8efe1" stroke="#829773" stroke-width="2"/>
+<text x="808" y="525" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">LightRAG</text>
+<text x="808" y="555" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Shop knowledge retrieval</text>
+<text x="808" y="581" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Graph + vector + text index</text>
+<rect x="790" y="665" width="360" height="130" rx="14" fill="#fff" stroke="#b1b9ac" stroke-width="2"/>
+<text x="808" y="700" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">SQLite / persistent</text>
+<text x="808" y="730" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Users + auth sessions</text>
+<text x="808" y="756" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Owned conversations / messages</text>
+<text x="808" y="782" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Cases + versioned quotes / audit</text>
+<rect x="1210" y="165" width="360" height="670" rx="14" fill="#f6f7f3" stroke="#c0c8ba" stroke-width="2"/>
+<text x="1228" y="200" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">EXTERNAL / OpenAI API</text>
+<rect x="1230" y="250" width="320" height="155" rx="14" fill="#eee9f6" stroke="#9888b3" stroke-width="2"/>
+<text x="1248" y="285" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">Responses API</text>
+<text x="1248" y="315" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Vision: image observations</text>
+<text x="1248" y="341" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Answer: retrieved shop context</text>
+<text x="1248" y="367" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Default: gpt-5.4-mini</text>
+<text x="1248" y="393" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Model configurable in .env</text>
+<rect x="1230" y="520" width="320" height="130" rx="14" fill="#eee9f6" stroke="#9888b3" stroke-width="2"/>
+<text x="1248" y="555" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">RAG indexing APIs</text>
+<text x="1248" y="585" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Entity / relation extraction</text>
+<text x="1248" y="611" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Embeddings:</text>
+<text x="1248" y="637" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">text-embedding-3-small</text>
+<polyline points="310,300 390,300" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="390,300 380,294 380,306" fill="#607669"/>
+<polyline points="310,485 350,485 350,320 390,320" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="390,320 380,314 380,326" fill="#607669"/>
+<polyline points="310,685 340,685 340,330 390,330" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="390,330 380,324 380,336" fill="#607669"/>
+<polyline points="550,345 550,410" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="550,410 544,400 556,400" fill="#607669"/>
+<text x="563" y="380" font-family="Thonburi,Arial,sans-serif" font-size="14" fill="#607669">API request</text>
+<polyline points="720,450 755,450 755,335 790,335" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="790,335 780,329 780,341" fill="#607669"/>
+<text x="795" y="460" font-family="Thonburi,Arial,sans-serif" font-size="14" fill="#607669">cache check</text>
+<polyline points="720,550 790,550" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="790,550 780,544 780,556" fill="#607669"/>
+<text x="725" y="538" font-family="Thonburi,Arial,sans-serif" font-size="14" fill="#607669">retrieve</text>
+<polyline points="720,595 755,595 755,730 790,730" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="790,730 780,724 780,736" fill="#607669"/>
+<text x="651" y="718" font-family="Thonburi,Arial,sans-serif" font-size="14" fill="#607669">read / write</text>
+<polyline points="720,475 770,475 1190,475 1190,330 1230,330" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="1230,330 1220,324 1220,336" fill="#607669"/>
+<text x="891" y="462" font-family="Thonburi,Arial,sans-serif" font-size="14" fill="#607669">vision / grounded answer</text>
+<rect x="30" y="880" width="1145" height="145" rx="14" fill="#f6f7f3" stroke="#c0c8ba" stroke-width="2"/>
+<text x="48" y="915" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">LOCAL DATA / Docker volumes</text>
+<rect x="50" y="930" width="330" height="75" rx="14" fill="#fff" stroke="#b1b9ac" stroke-width="2"/>
+<text x="68" y="965" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">Knowledge files</text>
+<text x="68" y="995" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Shop facts + labeled demo prices</text>
+<rect x="415" y="930" width="300" height="75" rx="14" fill="#e8efe1" stroke="#829773" stroke-width="2"/>
+<text x="433" y="965" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">ingest.py</text>
+<text x="433" y="995" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Explicit demo ingestion</text>
+<rect x="790" y="930" width="360" height="75" rx="14" fill="#fff" stroke="#b1b9ac" stroke-width="2"/>
+<text x="808" y="965" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">Persistent volumes</text>
+<text x="808" y="995" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">RAG index / member DB / Redis AOF</text>
+<polyline points="380,968 415,968" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="415,968 405,962 405,974" fill="#607669"/>
+<polyline points="565,930 565,855 770,855 770,585 790,585" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="790,585 780,579 780,591" fill="#607669"/>
+<text x="575" y="849" font-family="Thonburi,Arial,sans-serif" font-size="14" fill="#607669">ingest knowledge</text>
+<polyline points="1130,795 1130,930" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="1130,930 1124,920 1136,920" fill="#607669"/>
+<polyline points="1140,605 1160,605 1160,905 1000,905 1000,930" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="1000,930 994,920 1006,920" fill="#607669"/>
+<polyline points="1150,570 1195,570 1195,585 1230,585" fill="none" stroke="#607669" stroke-width="3"/>
+<polygon points="1230,585 1220,579 1220,591" fill="#607669"/>
+<rect x="1210" y="880" width="360" height="145" rx="14" fill="#fff2de" stroke="#c4a063" stroke-width="2"/>
+<text x="1228" y="915" font-family="Thonburi,Arial,sans-serif" font-size="21" fill="#24382d">HOSTED SITE</text>
+<text x="1228" y="945" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">chatgpt.site = static preview</text>
+<text x="1228" y="971" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">Member / RAG / cases run locally</text>
+<text x="1228" y="997" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#24382d">No Docker backend deployed here</text>
+<text x="40" y="1080" font-family="Thonburi,Arial,sans-serif" font-size="20" fill="#24382d">Private member chats and cases stay in SQLite, outside the shared RAG knowledge base.</text>
+<text x="40" y="1117" font-family="Thonburi,Arial,sans-serif" font-size="18" fill="#687661">Case chat reads owned SQLite records live, bypassing answer cache / GPT. Members approve quotes in the portal.</text>
+<text x="40" y="1149" font-family="Thonburi,Arial,sans-serif" font-size="16" fill="#687661">Verified: live text RAG + cache, membership and history UI. Full live image quality tests remain pending.</text>
 </svg>

@@ -79,6 +79,7 @@ function message(role, text, images = []) {
 }
 function scrollToEnd() { const area = $('.workspace'); area.scrollTop = area.scrollHeight; }
 function demoReply(text, imageCount) {
+  if (!imageCount && /\bPLM-\d+\b|เคสของฉัน|สถานะ.{0,20}(เคส|ซ่อม|เครื่อง)|(เคส|งานซ่อม).{0,20}(ถึงไหน|สถานะ)/i.test(text)) return 'กรุณาเข้าสู่ระบบสมาชิกเพื่อถามสถานะเคสของคุณครับ ระบบเคสใช้งานผ่านเว็บที่เชื่อม backend เท่านั้น';
   if (imageCount) return 'ได้รับภาพ ' + imageCount + ' ภาพแล้วครับ\n\nตอนนี้เป็นโหมดสาธิตหน้าเว็บ จึงยังไม่ได้วิเคราะห์ภาพด้วย AI กรุณาระบุรุ่น iPhone และเล่าอาการเพิ่มเติมได้เลยครับ\n\nPlimo รับ iPhone 11–17 รวม Pro / Pro Max และตรวจเช็คฟรีที่ร้าน';
   if (/เปิด|ปิด|กี่โมง|เวลา|พุธ|เช็คฟรี/.test(text)) return 'ร้านเปิด 10:00–20:00 น. ทุกวัน ยกเว้นวันพุธครับ\n\nตรวจเช็คฟรีที่ร้าน และรับซ่อม iPhone 11–17 รวม Pro / Pro Max';
   if (/ประกัน|ส่วนลด/.test(text)) return 'ยังไม่มีเงื่อนไขรับประกันหรือส่วนลดที่ร้านยืนยันครับ ราคาในแค็ตตาล็อกเป็นข้อมูลสาธิตเท่านั้น';
@@ -103,7 +104,7 @@ async function submit() {
     await ready;
     await memberReady;
     let result;
-    if (live) {
+    if (live || (loggedMember && /\bPLM-\d+\b|เคสของฉัน|สถานะ.{0,20}(เคส|ซ่อม|เครื่อง)|(เคส|งานซ่อม).{0,20}(ถึงไหน|สถานะ)|ซ่อม.{0,15}เสร็จ|รับเครื่อง.{0,10}ได้ยัง/i.test(text))) {
       loading.textContent = images.length ? 'กำลังดูภาพและค้นข้อมูลร้าน' : 'กำลังค้นข้อมูลร้าน';
       const form = new FormData(); form.append('text', text); images.forEach(file => form.append('images', file));
       if(loggedMember&&conversationId)form.append('conversation_id',conversationId);
@@ -121,7 +122,7 @@ async function submit() {
     if (turn !== generation) return;
     loading.remove(); const reply = message('assistant', result.answer);
     const source = document.createElement('p'); source.className = 'message-source';
-    source.textContent = live ? (result.sources.length ? 'อ้างอิง: '+result.sources.map(s=>s.label.endsWith('shop.md')?'ข้อมูลร้าน Plimo':s.label.includes('demo-slot-')?'รายการและราคาสาธิต':'เอกสารอ้างอิง').join(' · ') : 'ยังไม่พบข้อมูลที่ยืนยัน') : 'โหมดสาธิต · ยังไม่ได้เชื่อมผู้ช่วย AI';
+    source.textContent = result.case_used ? 'อ้างอิง: เคสของบัญชีคุณ · อ่านสถานะล่าสุดจากระบบ' : live ? (result.sources.length ? 'อ้างอิง: '+result.sources.map(s=>s.label.endsWith('shop.md')?'ข้อมูลร้าน Plimo':s.label.includes('demo-slot-')?'รายการและราคาสาธิต':'เอกสารอ้างอิง').join(' · ') : 'ยังไม่พบข้อมูลที่ยืนยัน') : 'โหมดสาธิต · ยังไม่ได้เชื่อมผู้ช่วย AI';
     reply.append(source);
   } catch (err) {
     if (turn !== generation) return;
@@ -144,4 +145,4 @@ $('#info-dialog').addEventListener('click', e => { if (e.target === e.currentTar
 window.addEventListener('beforeunload', () => objectUrls.forEach(url => URL.revokeObjectURL(url)));
 document.addEventListener('keydown', event => {if(event.key==='Escape'&&!$('#info-dialog').open)parent.postMessage('plimo-close-chat',location.origin);});
 update();
-const caseButton=document.createElement('button');caseButton.type='button';caseButton.className='chat-case-button';caseButton.textContent='ส่งเคสซ่อม';caseButton.onclick=()=>{if(busy)return;parent.postMessage({type:'plimo-case',conversation_id:conversationId},location.origin);};$('.composer-note').before(caseButton);
+const caseButton=document.createElement('button');caseButton.type='button';caseButton.className='chat-case-button';caseButton.textContent='ส่งเคสซ่อม';caseButton.onclick=()=>{if(busy)return;parent.postMessage({type:'plimo-case',conversation_id:conversationId},location.origin);};const caseActions=document.createElement('div');caseActions.className='chat-case-actions';const statusButton=document.createElement('button');statusButton.type='button';statusButton.className='chat-case-button';statusButton.textContent='สถานะเคสของฉัน';statusButton.onclick=()=>{if(busy||memberLoading)return;if(files.length){error('กรุณานำภาพออกก่อนสอบถามสถานะเคส');return;}input.value='เคสของฉันถึงไหนแล้ว';update();submit();};caseActions.append(statusButton,caseButton);$('.composer-note').before(caseActions);

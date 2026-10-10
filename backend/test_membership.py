@@ -50,4 +50,48 @@ class MemberTests(unittest.TestCase):
             self.assertEqual(len(membership.history(cid)),2)
             self.assertEqual(self.b.get('/api/member/conversations').json()['conversations'],[])
 
+    def quote_case(self):
+        cid=self.a.post('/api/member/cases',json={'model':'iPhone 13','issue':'หน้าจอแตกทดสอบ'}).json()['case']['id']
+        for status in ['received','checking']:
+            self.assertEqual(self.ad.patch('/api/admin/cases/'+str(cid),json={'status':status,'note':'ทดสอบขั้นตอน'}).status_code,200)
+        self.assertEqual(self.ad.patch('/api/admin/cases/'+str(cid),json={'status':'awaiting_approval','note':'เสนอราคาสาธิต','quoted_price':3200}).status_code,200)
+        return cid,self.a.get('/api/member/cases/'+str(cid)).json()['case']['quote']['id']
+
+    def test_quote_approval_ownership_and_price_guard(self):
+        cid,qid=self.quote_case();url='/api/member/cases/'+str(cid)+'/quote-decision'
+        body={'quote_id':qid,'decision':'approve'}
+        self.assertEqual(self.b.post(url,json=body).status_code,404)
+        self.assertEqual(self.ad.patch('/api/admin/cases/'+str(cid),json={'status':'repairing','note':'เริ่มงาน'}).status_code,409)
+        self.assertEqual(self.a.post(url,json=body).status_code,200)
+        self.assertEqual(self.a.post(url,json=body).status_code,409)
+        self.assertEqual(self.ad.patch('/api/admin/cases/'+str(cid),json={'status':'repairing','note':'เริ่มงาน','quoted_price':3300}).status_code,409)
+        self.assertEqual(self.ad.patch('/api/admin/cases/'+str(cid),json={'status':'repairing','note':'เริ่มงาน'}).status_code,200)
+        detail=self.a.get('/api/member/cases/'+str(cid)).json()
+        self.assertEqual(detail['case']['quote']['status'],'approved')
+        self.assertTrue(any('สมาชิกอนุมัติราคา' in ev['note'] for ev in detail['events']))
+
+    def test_quote_revision_reject_and_stale_decision(self):
+        cid,old=self.quote_case();url='/api/member/cases/'+str(cid)+'/quote-decision'
+        self.assertEqual(self.ad.patch('/api/admin/cases/'+str(cid),json={'status':'awaiting_approval','quoted_price':3500,'note':'ประเมินราคาใหม่'}).status_code,200)
+        self.assertEqual(self.a.post(url,json={'quote_id':old,'decision':'approve'}).status_code,409)
+        q=self.a.get('/api/member/cases/'+str(cid)).json()['case']['quote']
+        self.assertEqual(q['amount'],3500)
+        self.assertEqual(self.a.post(url,json={'quote_id':q['id'],'decision':'reject','note':'ขอประเมินใหม่'}).status_code,200)
+        c=self.a.get('/api/member/cases/'+str(cid)).json()['case']
+        self.assertEqual(c['status'],'checking');self.assertEqual(c['quote']['status'],'rejected')
+        self.assertEqual(self.ad.patch('/api/admin/cases/'+str(cid),json={'status':'repairing','note':'ข้ามอนุมัติ'}).status_code,409)
+
+    def test_case_chat_reads_fresh_owned_status_without_openai(self):
+        cid,_=self.quote_case();text=f'สถานะเคส PLM-{cid:05d}'
+        with patch.object(main,'cache',MemoryRedis()),patch.object(main,'OPENAI_KEY',''),patch.object(main,'generate') as gen,patch.object(main,'retrieve') as rag:
+            r=self.a.post('/api/chat',data={'text':text});self.assertEqual(r.status_code,200)
+            self.assertIn('รออนุมัติราคา',r.json()['answer']);conv=r.json()['conversation_id']
+            self.ad.patch('/api/admin/cases/'+str(cid),json={'status':'cancelled','note':'ยกเลิกตามคำขอ'})
+            r=self.a.post('/api/chat',data={'text':text,'conversation_id':conv});self.assertIn('ยกเลิก',r.json()['answer'])
+            self.assertFalse(r.json()['cache']['answer']);self.assertFalse(r.json()['rag_used'])
+            private=self.b.post('/api/chat',data={'text':text}).json()['answer'];self.assertIn('ไม่พบเคส',private);self.assertNotIn('iPhone 13',private)
+            guest=TestClient(main.app).post('/api/chat',data={'text':text});self.assertIn('เข้าสู่ระบบ',guest.json()['answer'])
+            self.assertEqual(len(self.a.get('/api/member/conversations/'+conv).json()['messages']),4)
+            gen.assert_not_called();rag.assert_not_called()
+
 if __name__=='__main__':unittest.main()

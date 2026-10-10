@@ -27,6 +27,12 @@ def init_db():
         CREATE TABLE IF NOT EXISTS cases(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id TEXT NOT NULL REFERENCES users(id),conversation_id TEXT REFERENCES conversations(id),model TEXT NOT NULL,issue TEXT NOT NULL,status TEXT NOT NULL,quoted_price REAL,created REAL NOT NULL,updated REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS case_events(id INTEGER PRIMARY KEY,case_id INTEGER NOT NULL REFERENCES cases(id),actor TEXT NOT NULL REFERENCES users(id),status TEXT NOT NULL,note TEXT NOT NULL,created REAL NOT NULL);
         ''')
+        c.executescript("""
+        CREATE TABLE IF NOT EXISTS case_quotes(id INTEGER PRIMARY KEY AUTOINCREMENT,case_id INTEGER NOT NULL REFERENCES cases(id),amount REAL NOT NULL,status TEXT NOT NULL CHECK(status IN ('pending','approved','rejected','superseded')),created REAL NOT NULL,decided REAL,decided_by TEXT REFERENCES users(id),member_note TEXT NOT NULL DEFAULT '');
+        CREATE INDEX IF NOT EXISTS quotes_case ON case_quotes(case_id,id);
+        """)
+        # Preserve existing waiting cases, adding a versioned quote once.
+        c.execute("INSERT INTO case_quotes(case_id,amount,status,created) SELECT id,quoted_price,'pending',updated FROM cases WHERE status='awaiting_approval' AND quoted_price IS NOT NULL AND NOT EXISTS(SELECT 1 FROM case_quotes WHERE case_id=cases.id)")
         password=os.getenv('ADMIN_PASSWORD','')
         username=os.getenv('ADMIN_USERNAME','admin').lower()
         if password and not c.execute('SELECT 1 FROM users WHERE username=?',(username,)).fetchone():
@@ -128,7 +134,15 @@ class CaseBody(BaseModel):
     issue:str=Field(min_length=5,max_length=2000)
     conversation_id:str|None=None
 def case_data(row):
-    d=dict(row);d['reference']=f"PLM-{d['id']:05d}";return d
+    d=dict(row);d['reference']=f"PLM-{d['id']:05d}"
+    with db() as c:quote=c.execute('SELECT * FROM case_quotes WHERE case_id=? ORDER BY id DESC LIMIT 1',(d['id'],)).fetchone()
+    d['quote']=dict(quote) if quote else None
+    next_steps=list(TRANSITIONS[d['status']])
+    if d['status']=='awaiting_approval' and (not quote or quote['status']!='approved'):
+        next_steps=[s for s in next_steps if s!='repairing']
+    if d['status']=='awaiting_approval':next_steps.insert(0,'awaiting_approval')
+    d['allowed_transitions']=next_steps
+    return d
 @router.post('/member/cases')
 def create_case(body:CaseBody,request:Request):
     u=user(request)
@@ -182,8 +196,66 @@ def update_case(cid:int,body:CaseUpdate,request:Request):
         c.execute('BEGIN IMMEDIATE')
         row=c.execute('SELECT * FROM cases WHERE id=?',(cid,)).fetchone()
         if not row:raise HTTPException(404,'ไม่พบเคส')
-        if body.status not in TRANSITIONS[row['status']]:raise HTTPException(409,'สถานะเปลี่ยนไม่ได้ตามขั้นตอน กรุณาโหลดข้อมูลใหม่')
+        revising=row['status']=='awaiting_approval' and body.status=='awaiting_approval'
+        if not revising and body.status not in TRANSITIONS[row['status']]:raise HTTPException(409,'สถานะเปลี่ยนไม่ได้ตามขั้นตอน กรุณาโหลดข้อมูลใหม่')
+        quote=c.execute('SELECT * FROM case_quotes WHERE case_id=? ORDER BY id DESC LIMIT 1',(cid,)).fetchone()
         now=time.time();price=body.quoted_price if body.quoted_price is not None else row['quoted_price']
+        if body.status=='awaiting_approval':
+            if price is None:raise HTTPException(422,'กรุณาระบุราคาเสนอให้ลูกค้าอนุมัติ')
+            c.execute("UPDATE case_quotes SET status='superseded' WHERE case_id=? AND status IN ('pending','approved')",(cid,))
+            c.execute("INSERT INTO case_quotes(case_id,amount,status,created) VALUES(?,?,'pending',?)",(cid,price,now))
+        elif body.status=='repairing' and (row['status']=='awaiting_approval' or price is not None):
+            if not quote or quote['status']!='approved' or quote['amount']!=price:raise HTTPException(409,'ลูกค้าต้องอนุมัติราคาเสนอปัจจุบันก่อนเริ่มซ่อม')
+        elif body.quoted_price is not None and row['status'] in {'repairing','ready'} and price!=row['quoted_price']:
+            raise HTTPException(409,'ไม่สามารถเปลี่ยนราคาที่อนุมัติหลังเริ่มซ่อม')
+        if body.status=='cancelled':
+            c.execute("UPDATE case_quotes SET status='superseded' WHERE case_id=? AND status='pending'",(cid,))
         c.execute('UPDATE cases SET status=?,quoted_price=?,updated=? WHERE id=?',(body.status,price,now,cid))
         c.execute('INSERT INTO case_events(case_id,actor,status,note,created) VALUES(?,?,?,?,?)',(cid,u['id'],body.status,body.note.strip(),now))
     return {'ok':True}
+
+
+class QuoteDecision(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    quote_id:int=Field(gt=0)
+    decision:str=Field(pattern='^(approve|reject)$')
+    note:str=Field(default='',max_length=1000)
+
+@router.post('/member/cases/{cid}/quote-decision')
+def decide_quote(cid:int,body:QuoteDecision,request:Request):
+    u=user(request)
+    with db() as c:
+        c.execute('BEGIN IMMEDIATE')
+        case=c.execute('SELECT * FROM cases WHERE id=? AND user_id=?',(cid,u['id'])).fetchone()
+        if not case:raise HTTPException(404,'ไม่พบเคส')
+        q=c.execute('SELECT * FROM case_quotes WHERE case_id=? ORDER BY id DESC LIMIT 1',(cid,)).fetchone()
+        if case['status']!='awaiting_approval' or not q or q['id']!=body.quote_id or q['status']!='pending':raise HTTPException(409,'ราคาเสนอเปลี่ยนแล้วหรือบันทึกคำตอบแล้ว กรุณาโหลดเคสใหม่')
+        approved=body.decision=='approve';now=time.time();status='awaiting_approval' if approved else 'checking'
+        c.execute('UPDATE case_quotes SET status=?,decided=?,decided_by=?,member_note=? WHERE id=?',('approved' if approved else 'rejected',now,u['id'],body.note.strip(),q['id']))
+        c.execute('UPDATE cases SET status=?,updated=? WHERE id=?',(status,now,cid))
+        note=('สมาชิกอนุมัติราคา' if approved else 'สมาชิกปฏิเสธราคา รอร้านประเมินใหม่')+f" {q['amount']:,.2f} บาท (ใบเสนอ #{q['id']})"
+        if body.note.strip():note+=' · '+body.note.strip()
+        c.execute('INSERT INTO case_events(case_id,actor,status,note,created) VALUES(?,?,?,?,?)',(cid,u['id'],status,note,now))
+    return {'ok':True,'decision':'approved' if approved else 'rejected'}
+
+STATUS_NAMES=dict(zip(STATUSES,['ส่งเคสแล้ว','ร้านรับเรื่อง','กำลังตรวจเช็ค','รออนุมัติราคา','กำลังซ่อม','พร้อมรับเครื่อง','ปิดเคส','ยกเลิก']))
+def is_case_question(text):
+    return bool(re.search(r'\bPLM-\d+\b|เคสของฉัน|สถานะ.{0,20}(เคส|ซ่อม|เครื่อง)|(เคส|งานซ่อม).{0,20}(ถึงไหน|สถานะ)|ซ่อม.{0,15}เสร็จ|รับเครื่อง.{0,10}ได้ยัง',text,re.I))
+
+def case_answer(u,text):
+    if not u:return 'กรุณาเข้าสู่ระบบก่อนถามสถานะเคสของคุณครับ'
+    match=re.search(r'\bPLM-(\d+)\b',text,re.I)
+    with db() as c:
+        if match:
+            raw=match.group(1)
+            rows=[] if len(raw)>12 else c.execute('SELECT * FROM cases WHERE id=? AND user_id=?',(int(raw),u['id'])).fetchall()
+        else:rows=c.execute('SELECT * FROM cases WHERE user_id=? ORDER BY updated DESC,id DESC LIMIT 5',(u['id'],)).fetchall()
+    if not rows:return 'ไม่พบเคสนี้ในบัญชีของคุณครับ' if match else 'บัญชีของคุณยังไม่มีเคสซ่อมครับ'
+    lines=['สถานะล่าสุดจากระบบเคสของคุณครับ (ระบบสาธิต)']
+    for row in rows:
+        item=case_data(row);q=item['quote'];label=STATUS_NAMES[item['status']]
+        if item['status']=='awaiting_approval' and q and q['status']=='approved':label='อนุมัติราคาแล้ว รอร้านเริ่มซ่อม'
+        lines.append(item['reference']+' · '+item['model']+' · '+label)
+        if q and q['status']=='pending' and item['status']=='awaiting_approval':lines.append(f"ราคาเสนอสาธิต {q['amount']:,.2f} บาท — เปิดบัญชี → งานซ่อมของฉัน เพื่ออนุมัติหรือปฏิเสธราคา")
+    if not match:lines.append('แสดงสูงสุด 5 เคสล่าสุด ระบุเลข PLM-xxxxx เพื่อดูเคสที่ต้องการ')
+    return '\n\n'.join(lines)

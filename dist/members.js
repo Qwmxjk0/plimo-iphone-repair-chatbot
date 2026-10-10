@@ -27,8 +27,18 @@ async function showMember(tab='cases'){
    const d=await memberApi('/member/cases');if(!d.cases.length){mb.append(node('p','ยังไม่มีเคส กดส่งเคสใหม่เพื่อเริ่มต้น','member-hint'));return;}
    const intro=node('div','','member-section-title');intro.append(node('h3','งานซ่อมของฉัน'),node('span',d.cases.length+' เคส'));mb.append(intro);
    const list=node('div','','member-list');for(const c of d.cases){
-     const row=node('article','','member-row'),heading=node('div','','case-heading');heading.append(node('strong',c.reference+' · '+c.model),node('span',statusNames[c.status],'status-badge'));row.append(heading,node('p',c.issue,'case-issue'));
+     const row=node('article','','member-row'),heading=node('div','','case-heading');heading.append(node('strong',c.reference+' · '+c.model),node('span',c.status==='awaiting_approval'&&c.quote?.status==='approved'?'รอร้านเริ่มซ่อม':statusNames[c.status],'status-badge'));row.append(heading,node('p',c.issue,'case-issue'));
      if(c.quoted_price!==null)row.append(node('p','ราคาเสนอในระบบสาธิต: '+Number(c.quoted_price).toLocaleString('th-TH')+' บาท','case-quote'));
+     if(c.quote){
+       const quote=c.quote,labels={pending:'รอการตัดสินใจ',approved:'อนุมัติแล้ว',rejected:'ปฏิเสธแล้ว',superseded:'มีใบเสนอใหม่'};
+       row.append(node('p','ใบเสนอ #'+quote.id+' · '+labels[quote.status],'quote-state'));
+       if(c.status==='awaiting_approval'&&quote.status==='pending'){
+         const form=node('form','','quote-decision'),label=node('label','ตอบรับราคาเสนอสาธิต '+Number(quote.amount).toLocaleString('th-TH')+' บาท'),select=node('select');
+         for(const [value,text] of [['','เลือกการตัดสินใจ'],['approve','อนุมัติราคานี้'],['reject','ปฏิเสธ / ขอประเมินใหม่']]){const option=node('option',text);option.value=value;select.append(option);}select.required=true;label.append(select);form.append(label);
+         const note=field(form,'หมายเหตุ (ไม่จำเป็น)','text',false);note.maxLength=1000;form.append(node('p','การยืนยันจะบันทึกคำตอบต่อใบเสนอนี้ การอนุมัติให้ร้านเริ่มงานตามราคาในระบบสาธิต ยังไม่มีการชำระเงินจริง','member-hint'));
+         const submit=node('button','ยืนยันคำตอบ','member-action');submit.type='submit';form.append(submit);form.onsubmit=async e=>{e.preventDefault();submit.disabled=true;me.textContent='';try{await memberApi('/member/cases/'+c.id+'/quote-decision','POST',{quote_id:quote.id,decision:select.value,note:note.value});await showMember('cases');}catch(err){fail(err);submit.disabled=false;}};row.append(form);
+       }else if(quote.status==='approved'&&c.status==='awaiting_approval')row.append(node('p','รอร้านเริ่มซ่อมตามราคาที่คุณอนุมัติ','member-hint'));
+     }
      const details=node('details','','case-history'),summary=node('summary','ประวัติสถานะ'),timeline=node('ol','','case-timeline');details.append(summary,timeline);let loaded=false;
      details.addEventListener('toggle',async()=>{if(!details.open||loaded)return;loaded=true;timeline.replaceChildren(node('li','กำลังโหลด…','member-hint'));try{const detail=await memberApi('/member/cases/'+c.id);timeline.replaceChildren();for(const ev of detail.events){const item=node('li'),line=node('div','','timeline-heading'),date=node('time',new Date(ev.created*1000).toLocaleString('th-TH'));date.dateTime=new Date(ev.created*1000).toISOString();line.append(node('strong',statusNames[ev.status]),date);item.append(line,node('p',ev.note));timeline.append(item);}}catch(e){loaded=false;timeline.replaceChildren(node('li','โหลดประวัติไม่สำเร็จ กรุณาปิดแล้วเปิดอีกครั้ง','member-hint'));fail(e);}});
      row.append(details);list.append(row);

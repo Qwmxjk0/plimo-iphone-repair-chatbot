@@ -29,7 +29,7 @@ async def check_origin(request, call_next):
     if request.method in {'POST','PATCH','PUT','DELETE'} and origin and urlparse(origin).netloc != request.headers.get('host'):
         return JSONResponse({'detail':'ต้นทางคำขอไม่ถูกต้อง'},status_code=403)
     return await call_next(request)
-cache = Redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"), decode_responses=True)
+cache = Redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"), decode_responses=True, socket_connect_timeout=3, socket_timeout=3)
 OPENAI_KEY = os.getenv("OPENAI_API_KEY", "")
 MODEL = os.getenv("OPENAI_MODEL", "gpt-5.4-mini")
 VISION_MODEL = os.getenv("OPENAI_VISION_MODEL", MODEL)
@@ -132,7 +132,8 @@ async def reset_session(request: Request, response: Response):
 
 @app.post("/api/chat")
 async def chat(request: Request, response: Response, text: Annotated[str, Form()] = "", images: Annotated[list[UploadFile] | None, File()] = None, conversation_id: Annotated[str | None, Form()] = None):
-    if not OPENAI_KEY or not RAG_KEY:
+    case_query=membership.is_case_question(text) and not images
+    if not case_query and (not OPENAI_KEY or not RAG_KEY):
         raise HTTPException(503, "ยังไม่ได้ตั้งค่าผู้ช่วย AI กรุณาใช้ตัวอย่างหน้าเว็บก่อน")
     text = normalize(text)
     images = images or []
@@ -160,9 +161,15 @@ async def chat(request: Request, response: Response, text: Annotated[str, Form()
         if count > 60:
             raise HTTPException(429, "ส่งคำถามบ่อยเกินไป กรุณาลองใหม่ภายหลัง")
         lock = "lock:" + session
-        if not await cache.set(lock, "1", nx=True, ex=300):
+        lock_token=secrets.token_urlsafe(24)
+        if not await cache.set(lock, lock_token, nx=True, ex=300):
             raise HTTPException(409, "กำลังตอบคำถามก่อนหน้า กรุณารอสักครู่")
         try:
+            if case_query:
+                answer=membership.case_answer(member,text)
+                if cid:membership.save_turn(cid,text,answer,0)
+                # Status is always read from SQLite; never cache a case answer.
+                return {"answer":answer,"sources":[{"label":"member-cases","id":"owned"}] if member else [],"rag_used":False,"case_used":bool(member),"cache":hits,"timings":{"total_ms":round((time.perf_counter()-started)*1000)},"conversation_id":cid,"kb_version":KB_VERSION}
             processed = []
             for upload in images:
                 data = await upload.read(MAX_IMAGE + 1)
@@ -210,9 +217,28 @@ async def chat(request: Request, response: Response, text: Annotated[str, Form()
             logger.info("chat_complete timings=%s cache=%s", timings, hits)
             return {**answer, "timings": timings, "cache": hits, "kb_version": KB_VERSION, "conversation_id":cid}
         finally:
-            await cache.delete(lock)
+            await cache.eval("if redis.call('get',KEYS[1])==ARGV[1] then return redis.call('del',KEYS[1]) else return 0 end",1,lock,lock_token)
     except HTTPException:
         raise
     except Exception as exc:
         logger.warning("chat_failure type=%s", type(exc).__name__)
         raise HTTPException(503, "ผู้ช่วยเชื่อมต่อบริการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")
+
+
+@app.get('/api/ready')
+async def readiness():
+    checks={}
+    try:checks['redis']=bool(await cache.ping())
+    except Exception:checks['redis']=False
+    try:
+        with membership.db() as c:c.execute('SELECT 1 FROM users LIMIT 1').fetchone()
+        checks['members']=True
+    except Exception:checks['members']=False
+    if OPENAI_KEY and RAG_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=3) as client:
+                r=await client.get(RAG_URL+'/health',headers={'X-API-Key':RAG_KEY});r.raise_for_status()
+                checks['lightrag']=r.json().get('status')=='healthy'
+        except Exception:checks['lightrag']=False
+    ready=all(checks.values())
+    return JSONResponse({'ready':ready,'checks':checks,'configured':bool(OPENAI_KEY and RAG_KEY),'note':'Dependency health only; does not verify OpenAI quota or indexed documents.'},status_code=200 if ready else 503)

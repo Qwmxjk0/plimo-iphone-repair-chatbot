@@ -56,3 +56,5 @@
  #member-dialog .member-row{padding:16px}
  #member-error:not(:empty){margin-left:18px;margin-right:18px}
 }
+
+.quote-state{font-size:11px!important;color:var(--green)!important}.quote-decision{display:grid;gap:10px;padding:14px;background:#f1f4ec;border-radius:10px;margin:12px 0}.quote-decision label{display:grid;gap:6px;font-size:12px}.quote-decision input,.quote-decision select{width:100%;font:inherit;padding:9px;border:1px solid var(--line);border-radius:7px;background:white}.quote-decision .member-hint{margin:0!important;font-size:11px!important}.quote-decision button{margin:0!important}

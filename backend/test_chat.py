@@ -16,6 +16,11 @@ class MemoryRedis:
         self.values[key] = value
         return True
     async def delete(self, key): self.values.pop(key, None)
+    async def eval(self, script, number, key, token):
+        if self.values.get(key)==token:
+            self.values.pop(key,None);return 1
+        return 0
+    async def ping(self):return True
     async def incr(self, key):
         self.values[key] = int(self.values.get(key, 0)) + 1
         return self.values[key]
@@ -91,5 +96,18 @@ class ChatTests(unittest.TestCase):
             self.assertEqual(self.client.get('/api/health').json()['mode'],'demo')
             self.assertEqual(self.client.post('/api/chat',data={'text':'ทดสอบ'}).status_code,503)
             self.assertEqual(self.calls,[])
+
+    def test_readiness_detects_redis_failure(self):
+        with patch.object(main,'OPENAI_KEY',''):
+            self.assertEqual(self.client.get('/api/ready').status_code,200)
+            async def broken():raise ConnectionError('offline test')
+            with patch.object(main.cache,'ping',broken):
+                r=self.client.get('/api/ready');self.assertEqual(r.status_code,503)
+                self.assertFalse(r.json()['checks']['redis']);self.assertTrue(r.json()['checks']['members'])
+    def test_provider_error_releases_lock_and_returns_error(self):
+        self.transport.handler=lambda request:httpx.Response(503,json={'detail':'offline failure'})
+        r=self.client.post('/api/chat',data={'text':'ร้านเปิดกี่โมง'})
+        self.assertEqual(r.status_code,503)
+        self.assertFalse(any(k.startswith('lock:') for k in main.cache.values))
 
 if __name__=='__main__': unittest.main()
