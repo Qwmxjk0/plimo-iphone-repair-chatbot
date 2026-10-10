@@ -4,7 +4,7 @@
 
 Command: `docker compose exec -T api python -m unittest test_chat test_ingest test_membership test_redis_integration -v`
 
-Result: **25 tests passed in 3.964 seconds**. 15 offline contract/member tests and 10 tests using the running Redis instance with mocked OpenAI/LightRAG responses. No paid AI request was needed for this run. Test Redis keys have unique `qa:<uuid>:` prefixes and are cleaned without FLUSHDB.
+Result: **26 tests passed in 4.612 seconds**. 16 offline contract/member/seed tests and 10 tests using the running Redis instance with mocked OpenAI/LightRAG responses. No paid AI request was needed for this run. Test Redis keys have unique `qa:<uuid>:` prefixes and are cleaned without FLUSHDB.
 
 Verified Redis behavior:
 
@@ -23,6 +23,7 @@ Verified member workflow:
 
 - Case status is fetched from owned SQLite rows on each recognized case query, even with no OpenAI key; status changes appear on the next request without stale answer-cache hits.
 - Another member cannot read the case, act on its quote, or attach its conversation. Guests are asked to sign in.
+- Fresh demo installation creates its pending quote immediately; repeated seed preserves cases and quote decisions.
 - Case answers are persisted to the member's text history.
 - Repairing a quoted case requires approval for the current exact price.
 - New quotes invalidate previous decisions; a stale/repeated decision returns 409.

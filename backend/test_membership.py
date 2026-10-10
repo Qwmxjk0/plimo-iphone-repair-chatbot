@@ -94,4 +94,16 @@ class MemberTests(unittest.TestCase):
             self.assertEqual(len(self.a.get('/api/member/conversations/'+conv).json()['messages']),4)
             gen.assert_not_called();rag.assert_not_called()
 
+    def test_fresh_demo_seed_has_pending_quote_and_is_idempotent(self):
+        import seed_demo
+        seed_demo.seed()
+        with membership.db() as c:
+            self.assertEqual(c.execute('SELECT COUNT(*) FROM cases').fetchone()[0],8)
+            q=c.execute("SELECT case_quotes.* FROM case_quotes JOIN cases ON cases.id=case_quotes.case_id WHERE cases.status='awaiting_approval'").fetchone()
+            self.assertIsNotNone(q);self.assertEqual(q['status'],'pending');self.assertEqual(q['amount'],990)
+        seed_demo.seed()
+        with membership.db() as c:
+            self.assertEqual(c.execute('SELECT COUNT(*) FROM cases').fetchone()[0],8)
+            self.assertEqual(c.execute('SELECT COUNT(*) FROM case_quotes').fetchone()[0],1)
+
 if __name__=='__main__':unittest.main()

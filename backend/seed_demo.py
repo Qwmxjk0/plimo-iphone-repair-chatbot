@@ -24,6 +24,9 @@ def seed():
             created=now-(8-i)*3600;model=['iPhone 13','iPhone 12','iPhone 13 Pro Max'][i%3]
             issue='[เคสตัวอย่างสำหรับเดโม] '+['หน้าจอแตก ต้องการให้ร้านตรวจเช็ค','แบตเตอรี่หมดเร็ว ขอประเมินอาการ','เครื่องเปิดไม่ติด ขอให้ตรวจเบื้องต้น'][i%3]
             row=c.execute('INSERT INTO cases(user_id,conversation_id,model,issue,status,quoted_price,created,updated) VALUES(?,?,?,?,?,?,?,?)',(ids['user'],conversations[i%3],model,issue,statuses[-1],(3200 if model=='iPhone 13' else 990 if model=='iPhone 12' else None) if i>=4 else None,created,created+len(statuses)*60));case_id=row.lastrowid
+            if statuses[-1]=='awaiting_approval':
+                amount=3200 if model=='iPhone 13' else 990 if model=='iPhone 12' else None
+                if amount is not None:c.execute("INSERT INTO case_quotes(case_id,amount,status,created) VALUES(?,?,'pending',?)",(case_id,amount,created+len(statuses)*60))
             for j,status in enumerate(statuses):c.execute('INSERT INTO case_events(case_id,actor,status,note,created) VALUES(?,?,?,?,?)',(case_id,ids['user'] if j==0 else ids['admin'],status,'ข้อมูลตัวอย่างสำหรับสาธิตสถานะ ไม่ใช่งานซ่อมจริง',created+j*60))
         c.execute('INSERT INTO demo_seed VALUES(?)',('members-v1',))
     print('Created 2 demo accounts, 3 example conversations, 8 example cases. No AI calls.')

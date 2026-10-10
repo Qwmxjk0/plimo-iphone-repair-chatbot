@@ -150,6 +150,6 @@ docker compose exec -T api python -m unittest test_chat test_ingest test_members
 curl -fsS http://127.0.0.1:8081/api/ready
 ```
 
-ผลล่าสุด: 25 tests ผ่าน รวม 10 integration tests ที่ใช้ Redis จริง โดย AI providers เป็น mock ไม่เสียค่า OpenAI เพิ่ม ใช้คีย์ทดสอบแยก prefix และลบเฉพาะคีย์ทดสอบ ไม่ใช้ FLUSHDB ดู [ผลตรวจ Redis และฟีเจอร์ใหม่](qa/results/redis-case-approval.md)
+ผลล่าสุด: 26 tests ผ่าน รวม 10 integration tests ที่ใช้ Redis จริง โดย AI providers เป็น mock ไม่เสียค่า OpenAI เพิ่ม ใช้คีย์ทดสอบแยก prefix และลบเฉพาะคีย์ทดสอบ ไม่ใช้ FLUSHDB ดู [ผลตรวจ Redis และฟีเจอร์ใหม่](qa/results/redis-case-approval.md)
 
 สถานะเคสใช้ตัวตรวจคำถามเฉพาะ เช่น `เคสของฉัน`, `สถานะเคส`, `PLM-xxxxx` ไม่ใช่ LLM tool calling ทุกคำถาม และไม่อนุมัติราคาผ่านข้อความแชท ต้องกดยืนยันใบเสนอในพอร์ทัลสมาชิก ราคาเสนอเปลี่ยนแล้วคำตอบต่อใบเสนอเก่าจะถูกปฏิเสธด้วย 409
