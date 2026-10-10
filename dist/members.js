@@ -1,0 +1,38 @@
+const statusNames={submitted:'ส่งเคสแล้ว',received:'ร้านรับเรื่อง',checking:'กำลังตรวจเช็ค',awaiting_approval:'รออนุมัติราคา',repairing:'กำลังซ่อม',ready:'พร้อมรับเครื่อง',closed:'ปิดเคส',cancelled:'ยกเลิก'};
+let memberUser=null,memberBackend=true,selectedConversation=null;
+const md=document.querySelector('#member-dialog'),mb=document.querySelector('#member-body'),me=document.querySelector('#member-error');
+function node(tag,text='',className=''){const e=document.createElement(tag);e.textContent=text;if(className)e.className=className;return e;}
+async function memberApi(path,method='GET',body){const r=await fetch('/api'+path,{method,headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});let d;try{d=await r.json();}catch{throw new Error('ระบบสมาชิกใช้งานผ่านเว็บ local เท่านั้น');}if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:'ข้อมูลไม่ถูกต้อง กรุณาตรวจช่องกรอก');return d;}
+function fail(err){me.textContent=err.message||'โหลดข้อมูลไม่สำเร็จ';}
+function field(form,label,type='text',required=true){const l=node('label',label),i=document.createElement(type==='textarea'?'textarea':'input');if(type!=='textarea')i.type=type;i.required=required;l.append(i);form.append(l);return i;}
+function action(text,fn){const b=node('button',text,'member-action');b.type='button';b.onclick=fn;return b;}
+function resetMemberChat(cid=null){const frame=document.querySelector('#chat-frame');if(frame)frame.src='chat.html?widget=1'+(cid?'&conversation='+encodeURIComponent(cid):'&new=1');}
+function updateMemberButton(){document.querySelector('#member-open').textContent=memberUser?'บัญชี · '+memberUser.name:'สมาชิก / เข้าสู่ระบบ';}
+function memberTabs(active){const t=node('div','','member-tabs');for(const [key,label] of [['cases','งานซ่อมของฉัน'],['history','ประวัติแชท'],['new','ส่งเคสใหม่']]){const b=action(label,()=>showMember(key));b.classList.toggle('active',active===key);t.append(b);}if(memberUser.role==='admin'){const a=node('a','หน้า Admin','member-action');a.href='admin.html';t.append(a);}t.append(action('ออกจากระบบ',async()=>{try{await memberApi('/auth/logout','POST');memberUser=null;selectedConversation=null;resetMemberChat();updateMemberButton();authForm();}catch(e){fail(e);}}));return t;}
+function authForm(register=false){me.textContent='';mb.replaceChildren();if(!memberBackend){mb.append(node('p','ระบบสมาชิกและเคสใช้งานบนเว็บ local ที่เชื่อม backend ครับ','member-hint'));const a=node('a','เปิดเว็บ local','member-action');a.href='http://127.0.0.1:8081/';mb.append(a);return;}
+ const tabs=node('div','','member-tabs');tabs.append(action('เข้าสู่ระบบ',()=>authForm(false)),action('สมัครสมาชิก',()=>authForm(true)));tabs.children[register?1:0].classList.add('active');mb.append(tabs);
+ const form=node('form','','member-form'),name=register?field(form,'ชื่อที่แสดง'):null,user=field(form,'ชื่อบัญชี (a-z และ 0-9)'),password=field(form,'รหัสผ่านอย่างน้อย 10 ตัว','password');user.autocomplete='username';user.maxLength=32;password.minLength=10;password.maxLength=128;password.autocomplete=register?'new-password':'current-password';if(name)name.maxLength=64;
+ form.append(node('p','บัญชีสำหรับระบบสาธิต เก็บข้อความแชทเพื่อดูย้อนหลัง ไม่เก็บไฟล์ภาพในประวัติ','member-hint'));const submit=node('button',register?'สมัครสมาชิก':'เข้าสู่ระบบ');submit.type='submit';form.append(submit);form.onsubmit=async e=>{e.preventDefault();submit.disabled=true;me.textContent='';try{const d=await memberApi(register?'/auth/register':'/auth/login','POST',{username:user.value,password:password.value,name:name?.value||''});memberUser=d.user;selectedConversation=null;resetMemberChat();updateMemberButton();showMember('cases');}catch(err){fail(err);}finally{submit.disabled=false;}};mb.append(form);
+}
+async function showMember(tab='cases'){
+ me.textContent='';mb.replaceChildren(memberTabs(tab),node('p','กำลังโหลด…','member-hint'));
+ try{
+ const head=memberTabs(tab);mb.replaceChildren(head);
+ if(tab==='cases'){
+   const d=await memberApi('/member/cases');if(!d.cases.length){mb.append(node('p','ยังไม่มีเคส กดส่งเคสใหม่เพื่อเริ่มต้น','member-hint'));return;}
+   const list=node('div','','member-list');for(const c of d.cases){const row=node('article','','member-row');row.append(node('strong',c.reference+' · '+c.model),node('span',statusNames[c.status],'status-badge'),node('p',c.issue));if(c.quoted_price!==null)row.append(node('p','ราคาเสนอในระบบสาธิต: '+Number(c.quoted_price).toLocaleString('th-TH')+' บาท'));row.append(action('ดูประวัติสถานะ',async()=>{try{const detail=await memberApi('/member/cases/'+c.id);const timeline=node('div');for(const ev of detail.events)timeline.append(node('p',statusNames[ev.status]+' · '+ev.note+'\n'+new Date(ev.created*1000).toLocaleString('th-TH')));row.querySelector('.case-timeline')?.remove();timeline.className='case-timeline';row.append(timeline);}catch(e){fail(e);}}));list.append(row);}mb.append(list);
+ }else if(tab==='history'){
+   const d=await memberApi('/member/conversations');if(!d.conversations.length)mb.append(node('p','แชทหลังเข้าสู่ระบบจะปรากฏที่นี่','member-hint'));
+   for(const c of d.conversations){const row=node('article','','member-row');row.append(node('strong',c.title),node('small',new Date(c.updated*1000).toLocaleString('th-TH')),action('เปิดบทสนทนา',()=>{selectedConversation=c.id;resetMemberChat(c.id);md.close();document.querySelector('#chat-panel').hidden=false;}),action('ใช้บทสนทนานี้ส่งเคส',()=>{selectedConversation=c.id;showMember('new');}));mb.append(row);}
+ }else{
+   mb.append(node('p','ส่งคำขอเข้าระบบสาธิต ยังไม่ใช่การยืนยันรับเครื่องหรือจองซ่อมจริง','member-hint'));
+   if(selectedConversation)mb.append(node('p','แนบบทสนทนาที่เลือกแล้ว ผู้ดูแลจะอ่านได้เมื่อเปิดเคสนี้','member-hint'));
+   const form=node('form','','member-form'),label=node('label','รุ่น iPhone'),model=document.createElement('select');for(let n=11;n<=17;n++)for(const suffix of ['', ' Pro',' Pro Max']){const o=node('option','iPhone '+n+suffix);o.value=o.textContent;model.append(o);}label.append(model);form.append(label);
+   const issue=field(form,'อาการ / รายละเอียด','textarea');issue.minLength=5;issue.maxLength=2000;const b=node('button','ส่งเคส');b.type='submit';form.append(b);form.onsubmit=async e=>{e.preventDefault();b.disabled=true;try{await memberApi('/member/cases','POST',{model:model.value,issue:issue.value,conversation_id:selectedConversation});selectedConversation=null;await showMember('cases');}catch(err){fail(err);}finally{b.disabled=false;}};mb.append(form);
+ }
+ }catch(e){fail(e);}
+}
+document.querySelector('#member-open').onclick=async()=>{md.showModal();me.textContent='';try{memberUser=(await memberApi('/auth/me')).user;memberBackend=true;updateMemberButton();memberUser?showMember():authForm();}catch(e){memberBackend=false;authForm();}};
+document.querySelector('#member-close').onclick=()=>md.close();
+memberApi('/auth/me').then(d=>{memberUser=d.user;updateMemberButton();}).catch(()=>{memberBackend=false;});
+window.addEventListener('message',event=>{if(event.origin===location.origin&&event.source===document.querySelector('#chat-frame')?.contentWindow&&event.data?.type==='plimo-case'){selectedConversation=event.data.conversation_id||null;md.showModal();memberUser?showMember('new'):authForm();}});

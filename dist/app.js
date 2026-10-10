@@ -2,6 +2,23 @@ const $ = (selector) => document.querySelector(selector);
 const input = $('#message'), fileInput = $('#file-input'), send = $('#send');
 let files = [], busy = false, generation = 0;
 let live = false;
+let conversationId=null,loggedMember=false,memberLoading=true;
+const memberReady=fetch('/api/auth/me').then(r=>r.ok?r.json():null).then(async data=>{
+  loggedMember=!!data?.user;
+  if(!loggedMember)return;
+  const params=new URLSearchParams(location.search);
+  conversationId=params.get('conversation');
+  if(!conversationId&&!params.has('new')){
+    const response=await fetch('/api/member/conversations');
+    if(response.ok)conversationId=(await response.json()).conversations[0]?.id||null;
+  }
+  if(conversationId){
+    const response=await fetch('/api/member/conversations/'+encodeURIComponent(conversationId));
+    if(!response.ok){conversationId=null;throw new Error('เปิดประวัติแชทไม่ได้');}
+    const history=(await response.json()).messages;
+    if(history.length){$('#welcome').hidden=true;$('#messages').hidden=false;history.forEach(m=>message(m.role,m.content));}
+  }
+}).catch(()=>{conversationId=null;}).finally(()=>{memberLoading=false;update();});
 let demoCatalog=[];
 const catalogReady=fetch('catalog.json').then(r=>r.ok?r.json():[]).then(items=>{demoCatalog=items.filter(i=>i.demo===true);}).catch(()=>{});
 const ready = fetch('/api/health').then(r => r.ok ? r.json() : null).then(data => {
@@ -12,7 +29,7 @@ const objectUrls = new Set();
 function imageUrl(file) { const url = URL.createObjectURL(file); objectUrls.add(url); return url; }
 function error(message = '') { $('#error').textContent = message; $('#error').hidden = !message; }
 function update() {
-  send.disabled = busy || (!input.value.trim() && !files.length);
+  send.disabled = busy || memberLoading || (!input.value.trim() && !files.length);
   input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 125) + 'px';
 }
 function renderAttachments() {
@@ -77,21 +94,24 @@ function demoReply(text, imageCount) {
   return 'แจ้งรุ่น iPhone และอาการที่พบได้เลยครับ ถ้ามีภาพตัวเครื่อง หน้าจอ หรือข้อความแจ้งเตือน สามารถกด + เพื่อแนบภาพได้\n\nPlimo รับ iPhone 11–17 รวม Pro / Pro Max และตรวจเช็คฟรีที่ร้าน\n\nนี่เป็นคำตอบสาธิต ยังไม่ได้ตรวจสอบอาการด้วย AI ครับ';
 }
 async function submit() {
-  if (busy || (!input.value.trim() && !files.length)) return;
+  if (busy || memberLoading || (!input.value.trim() && !files.length)) return;
   const text = input.value.trim(), images = [...files], turn = generation;
   busy = true; $('#welcome').hidden = true; $('#messages').hidden = false;
   message('user', text, images); input.value = ''; files = []; renderAttachments(); error(); update();
   const loading = document.createElement('div'); loading.className = 'typing'; loading.setAttribute('role','status'); loading.textContent = 'กำลังเตรียมคำตอบ'; $('#messages').append(loading); scrollToEnd();
   try {
     await ready;
+    await memberReady;
     let result;
     if (live) {
       loading.textContent = images.length ? 'กำลังดูภาพและค้นข้อมูลร้าน' : 'กำลังค้นข้อมูลร้าน';
       const form = new FormData(); form.append('text', text); images.forEach(file => form.append('images', file));
+      if(loggedMember&&conversationId)form.append('conversation_id',conversationId);
       const response = await fetch('/api/chat', {method:'POST',body:form,signal:AbortSignal.timeout(290000)});
       const data = await response.json();
       if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'ส่งคำถามไม่สำเร็จ กรุณาลองใหม่');
       result = data;
+      if(loggedMember)conversationId=data.conversation_id||conversationId;
     } else {
       loading.textContent = 'กำลังเตรียมคำตอบสาธิต';
       await new Promise(resolve => setTimeout(resolve, 850));
@@ -112,6 +132,7 @@ async function submit() {
 send.onclick = submit;
 document.querySelectorAll('[data-question]').forEach(button => { button.onclick = () => { if (busy) return; input.value = button.dataset.question; update(); submit(); }; });
 $('#new-chat').onclick = () => {
+  conversationId=null;
   generation++; busy = false; files = []; input.value = ''; $('#messages').replaceChildren(); $('#messages').hidden = true; $('#welcome').hidden = false;
   objectUrls.forEach(url => URL.revokeObjectURL(url)); objectUrls.clear(); renderAttachments(); error(); update(); input.focus();
   if (live) {busy=true;update();fetch('/api/session/new',{method:'POST'}).catch(()=>error('เริ่มบทสนทนาใหม่ไม่สำเร็จ กรุณาโหลดหน้าอีกครั้ง')).finally(()=>{busy=false;update();});}
@@ -123,3 +144,4 @@ $('#info-dialog').addEventListener('click', e => { if (e.target === e.currentTar
 window.addEventListener('beforeunload', () => objectUrls.forEach(url => URL.revokeObjectURL(url)));
 document.addEventListener('keydown', event => {if(event.key==='Escape'&&!$('#info-dialog').open)parent.postMessage('plimo-close-chat',location.origin);});
 update();
+const caseButton=document.createElement('button');caseButton.type='button';caseButton.className='chat-case-button';caseButton.textContent='ส่งเคสซ่อม';caseButton.onclick=()=>{if(busy)return;parent.postMessage({type:'plimo-case',conversation_id:conversationId},location.origin);};$('.composer-note').before(caseButton);

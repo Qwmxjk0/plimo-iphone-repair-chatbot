@@ -1,6 +1,8 @@
 .DS_Store
 node_modules/
 .env
+.admin-login.txt
+*.sqlite3*
 *.tar.gz
 __pycache__/
 .venv/

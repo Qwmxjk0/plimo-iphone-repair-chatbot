@@ -20,6 +20,11 @@ services:
       KB_VERSION: ${KB_VERSION:-plimo-demo-v2}
       RAG_MODE: ${RAG_MODE:-mix}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      MEMBER_DB: /app/data/members.sqlite3
+    volumes:
+      - member-data:/app/data
     depends_on:
       redis:
         condition: service_healthy
@@ -62,6 +67,7 @@ services:
       - rag-inputs:/app/data/inputs
     restart: unless-stopped
 volumes:
+  member-data:
   redis-data:
   rag-data-demo-v2:
   rag-inputs:

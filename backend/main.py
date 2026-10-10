@@ -15,8 +15,20 @@ import httpx
 from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from PIL import Image, ImageOps, UnidentifiedImageError
 from redis.asyncio import Redis
+import membership
+from urllib.parse import urlparse
+from fastapi.responses import JSONResponse
 
 app = FastAPI(title="Plimo Chat API", docs_url=None, redoc_url=None)
+membership.init_db()
+app.include_router(membership.router)
+
+@app.middleware('http')
+async def check_origin(request, call_next):
+    origin=request.headers.get('origin')
+    if request.method in {'POST','PATCH','PUT','DELETE'} and origin and urlparse(origin).netloc != request.headers.get('host'):
+        return JSONResponse({'detail':'ต้นทางคำขอไม่ถูกต้อง'},status_code=403)
+    return await call_next(request)
 cache = Redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"), decode_responses=True)
 OPENAI_KEY = os.getenv("OPENAI_API_KEY", "")
 MODEL = os.getenv("OPENAI_MODEL", "gpt-5.4-mini")
@@ -119,7 +131,7 @@ async def reset_session(request: Request, response: Response):
     return {"ok": True}
 
 @app.post("/api/chat")
-async def chat(request: Request, response: Response, text: Annotated[str, Form()] = "", images: Annotated[list[UploadFile] | None, File()] = None):
+async def chat(request: Request, response: Response, text: Annotated[str, Form()] = "", images: Annotated[list[UploadFile] | None, File()] = None, conversation_id: Annotated[str | None, Form()] = None):
     if not OPENAI_KEY or not RAG_KEY:
         raise HTTPException(503, "ยังไม่ได้ตั้งค่าผู้ช่วย AI กรุณาใช้ตัวอย่างหน้าเว็บก่อน")
     text = normalize(text)
@@ -127,9 +139,15 @@ async def chat(request: Request, response: Response, text: Annotated[str, Form()
     if len(text) > 3000 or len(images) > 3 or (not text and not images):
         raise HTTPException(422, "ส่งข้อความไม่เกิน 3,000 ตัวอักษร และภาพสูงสุด 3 ภาพ")
     session = request.cookies.get("plimo_session")
+    member=membership.optional_user(request)
+    cid=membership.conversation(member,conversation_id,text or 'สอบถามพร้อมภาพ') if member else None
+    if conversation_id and not member:
+        raise HTTPException(401,'กรุณาเข้าสู่ระบบเพื่อเปิดบทสนทนา')
     if not session or len(session) != 43 or not all(c.isalnum() or c in "_-" for c in session):
         session = secrets.token_urlsafe(32)
         response.set_cookie("plimo_session", session, httponly=True, samesite="strict", secure=os.getenv("COOKIE_SECURE", "false") == "true", max_age=86400)
+    if member:
+        session='member:'+member['id']+':'+cid
     started = time.perf_counter()
     timings = {}
     hits = {"answer": False, "vision": False, "retrieval": False}
@@ -150,7 +168,7 @@ async def chat(request: Request, response: Response, text: Annotated[str, Form()
                 data = await upload.read(MAX_IMAGE + 1)
                 processed.append(clean_image(data))
             hashes = [hashlib.sha256(data).hexdigest() for data in processed]
-            history = await get_cache("history:" + session) or []
+            history = await get_cache("history:" + session) or (membership.history(cid) if cid else [])
             user_content = text + (" [มีภาพประกอบ]" if images else "")
             repeated = len(history) >= 2 and history[-2].get("content") == user_content and history[-2].get("image_hashes", []) == hashes
             context_history = history[:-2] if repeated else history
@@ -186,9 +204,11 @@ async def chat(request: Request, response: Response, text: Annotated[str, Form()
             if not repeated:
                 history += [{"role": "user", "content": user_content, "image_hashes": hashes}, {"role": "assistant", "content": answer["answer"]}]
             await put_cache("history:" + session, history[-8:], 86400)
+            if cid:
+                membership.save_turn(cid,user_content,answer['answer'],len(images))
             timings["total_ms"] = round((time.perf_counter() - started) * 1000)
             logger.info("chat_complete timings=%s cache=%s", timings, hits)
-            return {**answer, "timings": timings, "cache": hits, "kb_version": KB_VERSION}
+            return {**answer, "timings": timings, "cache": hits, "kb_version": KB_VERSION, "conversation_id":cid}
         finally:
             await cache.delete(lock)
     except HTTPException:

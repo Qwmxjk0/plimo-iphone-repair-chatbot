@@ -36,3 +36,10 @@ Live OpenAI requests and LightRAG indexing require a valid key and API billing. 
 ## Demo price catalog
 
 See qa/demo-catalog.md. The current Compose uses a fresh rag-data-demo-v2 volume and KB_VERSION=plimo-demo-v2. Previous volumes are preserved. Index with docker compose exec api python ingest.py --include-demo, then wait for document processing. Never relabel examples as confirmed shop prices.
+# Members and repair cases (local MVP)
+
+Members can register, sign in, reopen their own text chat history and submit repair cases with a linked conversation. Admins have a separate `admin.html` dashboard with status counts, allowed transitions, quoted demo price, notes and audit timeline. API ownership and roles are checked server-side; session tokens are hashed in SQLite, passwords use salted PBKDF2, and cross-origin writes are rejected. SQLite persists in the `member-data` Docker volume. RAG does not index member records.
+
+Run `docker compose exec api python seed_demo.py` for the explicitly requested example data and accounts; see `qa/member-demo.md`. Seeding is idempotent. The original bootstrap admin password is local-only in ignored `.admin-login.txt` / `.env`; changing the env does not reset an existing account password. Public registration always creates role=user.
+
+History stores text and image count, not original image files. Admin reads conversations attached to cases only. This MVP has no password recovery, email notification, payment or automated customer price-approval action. Sites remains a static preview; use localhost:8081 for membership and RAG.
