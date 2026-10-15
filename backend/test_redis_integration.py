@@ -49,10 +49,9 @@ class RedisIntegration(test_chat.ChatTests):
         self.sync.close();self.redis_patch.stop();super().tearDown()
     def keys(self,kind):return list(self.sync.scan_iter(self.prefix+kind+':*'))
     def test_all_cache_layers_ttls_and_locks(self):
-        im=io.BytesIO();Image.new('RGB',(60,80),'green').save(im,'PNG')
-        files={'images':('test.png',im.getvalue(),'image/png')}
+        files={'images':('test.png',test_chat.photo(),'image/png')}
         self.assertEqual(self.client.post('/api/chat',data={'text':'ช่วยดูภาพ'},files=files).status_code,200)
-        self.assertEqual(self.kinds(),['router','vision','retrieve','answer'])
+        self.assertEqual(self.kinds(),['moderation','vision','router','retrieve','answer'])
         for kind,ttl in [('answer',1800),('retrieve',43200),('vision',86400),('history',86400),('router',43200)]:
             keys=self.keys(kind);self.assertEqual(len(keys),1,kind)
             self.assertTrue(ttl-30<=self.sync.ttl(keys[0])<=ttl,(kind,self.sync.ttl(keys[0])))
@@ -61,11 +60,11 @@ class RedisIntegration(test_chat.ChatTests):
         repeat=self.client.post('/api/chat',data={'text':'ช่วยดูภาพ'},files=files).json()
         # New context means a new routing decision; the image observation and answer are reused.
         self.assertTrue(repeat['cache']['answer']);self.assertTrue(repeat['cache']['vision'])
-        self.assertEqual(self.kinds()[4:],['router'])
+        self.assertEqual(self.kinds()[5:],['router'])
         self.sync.delete(*(self.keys('answer')+self.keys('history')))
         r=self.client.post('/api/chat',data={'text':'ช่วยดูภาพ'},files=files).json()
         self.assertTrue(r['cache']['router']);self.assertTrue(r['cache']['vision']);self.assertTrue(r['cache']['retrieval'])
-        self.assertEqual(self.kinds()[5:],['answer'])
+        self.assertEqual(self.kinds()[6:],['answer'])
     def test_rate_limit_and_existing_lock(self):
         self.client.post('/api/chat',data={'text':'ร้านเปิดกี่โมง'})
         session=self.client.cookies.get('plimo_session')

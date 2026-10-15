@@ -9,5 +9,7 @@ $COMPOSE exec -T api python -c "import sqlite3;s=sqlite3.connect('/app/data/memb
 $COMPOSE exec -T api cat /app/data/.backup.sqlite3 > "$DEST/members-$STAMP.sqlite3"
 $COMPOSE exec -T api rm -f /app/data/.backup.sqlite3
 $COMPOSE exec -T lightrag tar czf - -C /app/data/rag_storage . > "$DEST/rag-$STAMP.tgz"
+# Chat images kept on disk (when R2 is not configured; R2 has its own durability).
+$COMPOSE exec -T api sh -c 'test -d /app/data/images && tar czf - -C /app/data images || true' > "$DEST/images-$STAMP.tgz"
 find "$DEST" -type f -mtime +7 -delete
 echo "backup ok $STAMP $(du -sh "$DEST" | cut -f1)"

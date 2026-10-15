@@ -42,6 +42,11 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      # Chat images: private Cloudflare R2 bucket when set, otherwise /app/data/images (backed up daily).
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET: ${R2_BUCKET:-plimo-chat-images}
       WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
       MEMBER_DB: /app/data/members.sqlite3
     volumes:

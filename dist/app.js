@@ -16,7 +16,7 @@ const memberReady=fetch('/api/auth/me').then(r=>r.ok?r.json():null).then(async d
     const response=await fetch('/api/member/conversations/'+encodeURIComponent(conversationId));
     if(!response.ok){conversationId=null;throw new Error('เปิดประวัติแชทไม่ได้');}
     const history=(await response.json()).messages;
-    if(history.length){$('#welcome').hidden=true;$('#messages').hidden=false;history.forEach(m=>message(m.role,m.content));}
+    if(history.length){$('#welcome').hidden=true;$('#messages').hidden=false;history.forEach(m=>message(m.role,m.content,[],m.image_ids||[]));}
   }
 }).catch(()=>{conversationId=null;}).finally(()=>{memberLoading=false;update();});
 let demoCatalog=[];
@@ -48,8 +48,11 @@ async function acceptFiles(incoming) {
   const errors = [];
   for (const file of incoming) {
     if (files.length >= 3) { errors.push('แนบได้สูงสุด 3 ภาพต่อข้อความ'); break; }
-    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { errors.push('รองรับ JPG, PNG และ WebP กรุณาแปลง HEIC เป็น JPG ก่อน'); continue; }
+    const heic = ['image/heic','image/heif'].includes(file.type) || /\.hei[cf]$/i.test(file.name);
+    if (!heic && !['image/jpeg','image/png','image/webp'].includes(file.type)) { errors.push('รองรับ JPG, PNG, WebP และ HEIC จาก iPhone'); continue; }
     if (file.size > 10 * 1024 * 1024) { errors.push('แต่ละภาพต้องมีขนาดไม่เกิน 10 MB'); continue; }
+    // HEIC is checked and converted on the server (most desktop browsers cannot decode it).
+    if (heic) { files.push(file); continue; }
     try { const bitmap = await createImageBitmap(file); bitmap.close(); files.push(file); }
     catch { errors.push('เปิดภาพนี้ไม่ได้ กรุณาเลือกภาพใหม่'); }
   }
@@ -63,7 +66,7 @@ input.addEventListener('paste', e => { const pasted = [...e.clipboardData.files]
 const composer = $('.composer');
 composer.addEventListener('dragover', e => e.preventDefault());
 composer.addEventListener('drop', e => { e.preventDefault(); acceptFiles([...e.dataTransfer.files]); });
-function message(role, text, images = []) {
+function message(role, text, images = [], storedIds = []) {
   const row = document.createElement('article'); row.className = 'message ' + role + '-message';
   if (role === 'assistant') {
     const label = document.createElement('div'); label.className = 'assistant-label';
@@ -73,6 +76,10 @@ function message(role, text, images = []) {
   if (images.length) {
     const gallery = document.createElement('div'); gallery.className = 'message-images';
     images.forEach(file => { const img = document.createElement('img'); img.src = imageUrl(file); img.alt = file.name; gallery.append(img); }); row.append(gallery);
+  }
+  if (storedIds.length) {
+    const gallery = document.createElement('div'); gallery.className = 'message-images';
+    storedIds.forEach(id => { const img = document.createElement('img'); img.src = '/api/images/' + encodeURIComponent(id); img.alt = 'ภาพที่แนบในบทสนทนา'; img.loading = 'lazy'; gallery.append(img); }); row.append(gallery);
   }
   if (text) { const bubble = document.createElement('div'); bubble.className = 'bubble'; bubble.textContent = text; row.append(bubble); }
   $('#messages').append(row); scrollToEnd(); return row;

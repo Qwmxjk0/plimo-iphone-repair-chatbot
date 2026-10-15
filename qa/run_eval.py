@@ -145,6 +145,7 @@ def grade(case, status, data, values, ctx):
     for flag in spec.get('guard', []):
         if flag not in data.get('guard', []): fails.append(f'guard {flag} not raised')
     if spec.get('max_len') and len(answer) > spec['max_len']: fails.append(f'answer too long ({len(answer)} chars)')
+    if 'stored' in spec and bool(data.get('image_ids')) != spec['stored']: fails.append(f"image stored={bool(data.get('image_ids'))}, expected {spec['stored']}")
     member = ctx['member'] if ctx else None
     for key, expected in (spec.get('verify_status', {}) if member else {}).items():
         actual = member.request('GET', f"/api/member/cases/{ctx['ids'][key]}")[1]['case']['status']
@@ -169,15 +170,17 @@ def run_case(case, base, ctx):
         form = {'text': fill(t['text'], values)}
         if c.conversation:
             form['conversation_id'] = c.conversation
-        files = [('images', (Path(t['image']).name, (ROOT / t['image']).read_bytes(), 'image/png'))] if t.get('image') else []
+        types = {'.heic': 'image/heic', '.gif': 'image/gif', '.jpg': 'image/jpeg', '.webp': 'image/webp'}
+        files = [('images', (Path(t['image']).name, (ROOT / t['image']).read_bytes(), types.get(Path(t['image']).suffix.lower(), 'image/png')))] if t.get('image') else []
         started = time.perf_counter()
         status, data = c.request('POST', '/api/chat', form=form, files=files)
         elapsed = round((time.perf_counter() - started) * 1000)
         c.conversation = data.get('conversation_id') or c.conversation
         turns.append({'text': form['text'][:200], 'status': status, 'answer': data.get('answer', data.get('detail', '')), 'route': data.get('route'),
-                      'guard': data.get('guard', []), 'cache': data.get('cache', {}), 'timings': data.get('timings', {}), 'elapsed_ms': elapsed})
+                      'guard': data.get('guard', []), 'cache': data.get('cache', {}), 'timings': data.get('timings', {}), 'elapsed_ms': elapsed,
+                      'image_ids': data.get('image_ids', [])})
     last = turns[-1]
-    fails = grade(case, last['status'], {'answer': last['answer'], 'route': last['route'], 'guard': last['guard'], 'detail': last['answer']}, values, ctx)
+    fails = grade(case, last['status'], {'answer': last['answer'], 'route': last['route'], 'guard': last['guard'], 'detail': last['answer'], 'image_ids': last.get('image_ids', [])}, values, ctx)
     return {'id': case['id'], 'cat': case['cat'], 'title': case['title'], 'pass': not fails, 'failures': fails, 'turns': turns}
 
 def metrics(admin):

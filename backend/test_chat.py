@@ -37,6 +37,12 @@ class MemoryRedis:
     async def ltrim(self, key, start, end): self.lists[key] = self.lists.get(key, [])[start:(None if end == -1 else end + 1)]
     async def lrange(self, key, start, end): return self.lists.get(key, [])[start:(None if end == -1 else end + 1)]
 
+def photo(fmt='PNG', size=(160, 120)):
+    """A small image with real detail (a flat colour is rejected as blank before any model call)."""
+    image = Image.new('RGB', size)
+    image.putdata([((x * 7) % 256, (y * 5) % 256, ((x + y) * 3) % 256) for y in range(size[1]) for x in range(size[0])])
+    out = io.BytesIO(); image.save(out, fmt); return out.getvalue()
+
 def route_json(text, **override):
     route = {'intent': 'shop_info', 'standalone': text, 'models': [], 'services': [], 'case_ref': None, 'case_topic': 'none',
              'extra_question': None, 'needs_clarification': False, 'time_sensitive': False}
@@ -50,6 +56,8 @@ class ChatSetup:
         self.no_context = False
         self.routes = {}
         self.answer_text = 'ร้านเปิด 10:00–20:00 ยกเว้นวันพุธ'
+        self.flagged = False
+        self.vision = {'relevance': 'device_or_screen', 'quality': 'ok', 'observation': 'เห็นรอยแตกที่หน้าจอ ยังไม่ทราบรุ่น'}
         self.transport = httpx.MockTransport(self.upstream)
         original_client = httpx.AsyncClient
         self.patches = [
@@ -73,6 +81,12 @@ class ChatSetup:
             self.calls.append(('retrieve', payload))
             chunks = [] if self.no_context else [{'content':'ร้าน Plimo เปิด 10:00–20:00 ยกเว้นวันพุธ ตรวจเช็คฟรี','reference_id':'1'}]
             return httpx.Response(200, json={'status':'success','data':{'chunks':chunks,'references':[{'file_path':'shop.md','reference_id':'1'}]}})
+        if request.url.path == '/v1/moderations':
+            self.calls.append(('moderation', payload))
+            return httpx.Response(200, json={'results': [{'flagged': self.flagged}] * len(payload['input'])})
+        if request.url.path == '/v1/responses' and any(c['type'] == 'input_image' for c in payload['input'][0]['content']):
+            self.calls.append(('vision', payload))
+            return httpx.Response(200, json={'output': [{'content': [{'type': 'output_text', 'text': json.dumps(self.vision, ensure_ascii=False)}]}], 'usage': {'input_tokens': 300, 'output_tokens': 60}})
         if request.url.path == '/v1/responses':
             if payload.get('text', {}).get('format'):
                 self.calls.append(('router', payload))
@@ -104,12 +118,11 @@ class ChatTests(ChatSetup, unittest.TestCase):
             self.assertTrue(again.json()['cache']['answer'])
         self.assertEqual(len(self.calls),3)
     def test_images_analyzed_before_retrieval_and_session_isolation(self):
-        image=io.BytesIO();Image.new('RGB',(120,160),'green').save(image,'PNG')
-        files={'images':('phone.png',image.getvalue(),'image/png')}
+        files={'images':('phone.png',photo(),'image/png')}
         result=self.client.post('/api/chat',data={'text':'ช่วยดูภาพ'},files=files)
         self.assertEqual(result.status_code,200)
-        self.assertEqual(self.kinds(),['router','vision','retrieve','answer'])
-        self.assertIn('เห็นรอยแตก',self.calls[2][1]['query'])
+        self.assertEqual(self.kinds(),['moderation','vision','router','retrieve','answer'])
+        self.assertIn('เห็นรอยแตก',self.calls[3][1]['query'])
         before=len(self.calls)
         self.client.cookies.clear()
         result=self.client.post('/api/chat',data={'text':'ช่วยดูภาพ'},files=files)

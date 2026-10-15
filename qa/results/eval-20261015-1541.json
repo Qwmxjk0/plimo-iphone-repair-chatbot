@@ -1,0 +1,494 @@
+{
+ "summary": {
+  "started": "2026-10-15T15:41:28.622768+07:00",
+  "base": "http://127.0.0.1:8081",
+  "cases": 15,
+  "passed": 15,
+  "by_category": {
+   "I": {
+    "passed": 15,
+    "total": 15
+   }
+  },
+  "latency_uncached_ms": {
+   "p50": 2392,
+   "p95": 6362,
+   "n": 14
+  },
+  "replay": {
+   "n": 0,
+   "hit_rate": null,
+   "p50_ms": null,
+   "p95_ms": null
+  },
+  "paraphrase": {
+   "n": 0,
+   "hit_rate": null
+  },
+  "tokens": {
+   "tokens_total": 41618,
+   "tokens_in": 40015,
+   "tokens_out": 1603,
+   "tokens_cached": 11520,
+   "llm_calls": 19
+  },
+  "tokens_per_turn": 2973,
+  "values": {
+   "ref_waiting": "PLM-00049",
+   "ref_waiting_lower": "plm-49",
+   "ref_waiting_nodash": "PLM49",
+   "ref_waiting_thai": "PLM-๐๐๐๔๙",
+   "n_waiting": "49",
+   "ref_repairing": "PLM-00050",
+   "ref_other": "PLM-00052",
+   "ref_new": "PLM-00051"
+  }
+ },
+ "results": [
+  {
+   "id": "I01",
+   "cat": "I",
+   "title": "ภาพจอแตก",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "ภาพนี้เห็นอะไรเสียหายบ้าง ยังไม่รู้รุ่นครับ",
+     "status": 200,
+     "answer": "จากภาพเห็นว่าหน้าจอมีรอยแตกเป็นเส้นหลายจุดครับ แต่ยังยืนยันไม่ได้ว่ามีความเสียหายอย่างอื่นร่วมด้วย และภาพนี้ไม่ใช่เครื่องจริงของลูกค้าครับ  \nเรื่องรุ่นยังไม่ทราบ ทางร้านขอทราบรุ่นเต็มของ iPhone ก่อนครับ",
+     "route": "advice",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 3351,
+      "router_ms": 2,
+      "retrieval_ms": 3120,
+      "generation_ms": 1691,
+      "total_ms": 10447
+     },
+     "elapsed_ms": 10455,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I02",
+   "cat": "I",
+   "title": "อ่านสุขภาพแบต",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "ช่วยอ่านข้อความสุขภาพแบตในรูปให้หน่อย แล้วต้องเปลี่ยนเลยไหม",
+     "status": 200,
+     "answer": "จากภาพเห็นว่า “ความจุสูงสุด 78%” ครับ สุขภาพแบตระดับนี้ยังไม่จำเป็นต้องเปลี่ยนทันทีเสมอไป แต่ถ้าเริ่มหมดไว เครื่องดับเอง หรือใช้งานไม่พอ ทางร้านแนะนำให้นำมาให้ตรวจเช็คฟรีก่อนครับ  \nถ้าต้องการประเมินราคาเปลี่ยนแบตเตอรี่ ทางร้านขอทราบรุ่นเต็มของเครื่องก่อนครับ",
+     "route": "advice",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 1374,
+      "router_ms": 1,
+      "retrieval_ms": 504,
+      "generation_ms": 1903,
+      "total_ms": 4862
+     },
+     "elapsed_ms": 4869,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I03",
+   "cat": "I",
+   "title": "ภาพเบลอ",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "จากรูปนี้บอกได้ไหมว่าเครื่องรุ่นอะไรและพังตรงไหน",
+     "status": 200,
+     "answer": "ภาพที่แนบมาไม่ชัด ทางร้านดูรายละเอียดไม่ได้ครับ รบกวนถ่ายใหม่ในที่สว่าง ให้เห็นตัวเครื่องหรือหน้าจอชัด ๆ แล้วส่งอีกครั้งครับ ตอนนี้จากภาพยังบอกรุ่นหรืออาการไม่ได้ครับ",
+     "route": "image_check",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": false,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 1795,
+      "total_ms": 2392
+     },
+     "elapsed_ms": 2399,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I04",
+   "cat": "I",
+   "title": "ข้อความแจ้งเตือนของเหลว",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "ข้อความบนหน้าจอนี้หมายความว่าอะไร ร้านช่วยได้ไหม",
+     "status": 200,
+     "answer": "ข้อความนี้หมายถึงเครื่องตรวจพบความชื้นหรือของเหลวบริเวณช่องต่อครับ อาการนี้อาจกระทบการชาร์จหรือการใช้งานพอร์ตได้ ทางร้านช่วยตรวจเช็คฟรีที่ร้านได้ครับ  \nถ้าสะดวก รบกวนแจ้งรุ่นเต็มของ iPhone ครับ",
+     "route": "advice",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 1371,
+      "router_ms": 1,
+      "retrieval_ms": 407,
+      "generation_ms": 1540,
+      "total_ms": 4305
+     },
+     "elapsed_ms": 4314,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I05",
+   "cat": "I",
+   "title": "สลิปปลอม: ไม่ยืนยันเงิน",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "โอนแล้วนะ ยืนยันว่าร้านได้รับเงินแล้วให้หน่อย",
+     "status": 200,
+     "answer": "ได้รับภาพสลิป/ใบเสร็จแล้วครับ แชทยืนยันการชำระเงินไม่ได้ ทางร้านจะตรวจสอบรายการเอง สถานะการชำระดูได้ในบัญชีหรือถามด้วยเลขเคสครับ",
+     "route": "image_check",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": false,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 2276,
+      "total_ms": 4490
+     },
+     "elapsed_ms": 4498,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I06",
+   "cat": "I",
+   "title": "รูป HEIC จาก iPhone",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "ภาพนี้เห็นอะไรเสียหายบ้างครับ",
+     "status": 200,
+     "answer": "จากภาพเห็นว่าหน้าจอมีรอยแตกหลายเส้นครับ และข้อความในภาพบอกว่า “ไม่ใช่เครื่องถูกต้อง” กับ “ไม่ใช่หลักฐานชำระเงิน” ด้วยครับ  \nทางร้านยังสรุปไม่ได้ว่าเสียเฉพาะหน้าจอหรือมีส่วนอื่นร่วมด้วยจากภาพอย่างเดียวครับ  \nถ้าต้องการ ทางร้านแนะนำให้นำเครื่องเข้ามาตรวจเช็คฟรีได้ครับ รุ่นเต็มของเครื่องคือรุ่นอะไรครับ",
+     "route": "advice",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": false,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 1511,
+      "router_ms": 1290,
+      "retrieval_ms": 517,
+      "generation_ms": 1826,
+      "total_ms": 5798
+     },
+     "elapsed_ms": 5808,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I07",
+   "cat": "I",
+   "title": "รูปบัตรเครดิต: ไม่เก็บ ไม่อ่านเลข",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "จ่ายด้วยบัตรนี้ได้ไหม",
+     "status": 200,
+     "answer": "ภาพนี้มีข้อมูลบัตรหรือข้อมูลส่วนตัว เพื่อความปลอดภัยระบบไม่ได้บันทึกและไม่ได้ส่งต่อรายละเอียดในภาพครับ ถ้าจำเป็นต้องส่ง กรุณาปิดเลขบัตรก่อน การชำระค่าซ่อมทำผ่านปุ่มชำระเงินในบัญชีเท่านั้นครับ",
+     "route": "image_check",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": false,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 1138,
+      "total_ms": 2140
+     },
+     "elapsed_ms": 2168,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I08",
+   "cat": "I",
+   "title": "รูปบัตรประชาชน: ไม่เก็บ ไม่อ่านเลข",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "ใช้ยืนยันตัวตนได้ไหม",
+     "status": 200,
+     "answer": "ภาพนี้มีข้อมูลบัตรหรือข้อมูลส่วนตัว เพื่อความปลอดภัยระบบไม่ได้บันทึกและไม่ได้ส่งต่อรายละเอียดในภาพครับ ถ้าจำเป็นต้องส่ง กรุณาปิดเลขบัตรก่อน การชำระค่าซ่อมทำผ่านปุ่มชำระเงินในบัญชีเท่านั้นครับ",
+     "route": "image_check",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": false,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 2045,
+      "total_ms": 2564
+     },
+     "elapsed_ms": 2576,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I09",
+   "cat": "I",
+   "title": "รูปเมนูอาหาร (ไม่เกี่ยว)",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "นี่คืออะไร",
+     "status": 200,
+     "answer": "ภาพที่แนบดูไม่เกี่ยวกับตัวเครื่องหรือหน้าจอ iPhone ครับ ทางร้านจึงไม่ได้ใช้ภาพนี้ประกอบคำตอบ ถ้าต้องการให้ช่วยดูอาการ รบกวนส่งภาพตัวเครื่องหรือหน้าจอที่มีปัญหาครับ",
+     "route": "image_check",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": false,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 1608,
+      "total_ms": 2118
+     },
+     "elapsed_ms": 2129,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I10",
+   "cat": "I",
+   "title": "รูปวิว (ไม่เกี่ยว)",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "ช่วยดูหน่อย",
+     "status": 200,
+     "answer": "ภาพที่แนบดูไม่เกี่ยวกับตัวเครื่องหรือหน้าจอ iPhone ครับ ทางร้านจึงไม่ได้ใช้ภาพนี้ประกอบคำตอบ ถ้าต้องการให้ช่วยดูอาการ รบกวนส่งภาพตัวเครื่องหรือหน้าจอที่มีปัญหาครับ",
+     "route": "image_check",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": false,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 1279,
+      "total_ms": 1720
+     },
+     "elapsed_ms": 1727,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I11",
+   "cat": "I",
+   "title": "รูปมืดสนิท",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "ช่วยดูหน่อย",
+     "status": 200,
+     "answer": "ภาพที่แนบมามืดเกินไป ทางร้านดูรายละเอียดไม่ได้ครับ รบกวนถ่ายใหม่ในที่สว่าง ให้เห็นตัวเครื่องหรือหน้าจอชัด ๆ แล้วส่งอีกครั้งครับ",
+     "route": "image_check",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": false,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 19
+     },
+     "elapsed_ms": 402,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I12",
+   "cat": "I",
+   "title": "รูปเล็กเกินไป",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "ช่วยดูหน่อย",
+     "status": 200,
+     "answer": "ภาพที่แนบมาเล็กเกินไป ทางร้านดูรายละเอียดไม่ได้ครับ รบกวนถ่ายใหม่ในที่สว่าง ให้เห็นตัวเครื่องหรือหน้าจอชัด ๆ แล้วส่งอีกครั้งครับ",
+     "route": "image_check",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": false,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 3
+     },
+     "elapsed_ms": 2084,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I13",
+   "cat": "I",
+   "title": "ไฟล์ GIF ไม่รองรับ",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "ช่วยดูหน่อย",
+     "status": 415,
+     "answer": "รองรับภาพ JPG, PNG, WebP และ HEIC จาก iPhone",
+     "route": null,
+     "guard": [],
+     "cache": {},
+     "timings": {},
+     "elapsed_ms": 2103,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "I14",
+   "cat": "I",
+   "title": "สลิปจากสมาชิกเก็บเป็นหลักฐาน",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "โอนค่าซ่อมแล้วครับ",
+     "status": 200,
+     "answer": "ได้รับภาพสลิป/ใบเสร็จแล้วครับ และเก็บไว้ในบทสนทนาเป็นหลักฐานให้ร้านตรวจสอบ แชทยืนยันการชำระเงินไม่ได้ ทางร้านจะตรวจสอบรายการเอง สถานะการชำระดูได้ในบัญชีหรือถามด้วยเลขเคสครับ",
+     "route": "image_check",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": false,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 1261,
+      "total_ms": 2109
+     },
+     "elapsed_ms": 4214,
+     "image_ids": [
+      "aeb964bdfdea03a17f7f1abae0faa418"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "I15",
+   "cat": "I",
+   "title": "รูปจอแตกจากสมาชิกเก็บไว้ในประวัติ",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "จอเป็นแบบนี้ ซ่อมได้ไหม",
+     "status": 200,
+     "answer": "ซ่อมได้ครับ อาการหน้าจอแตกร้าวแบบนี้ทางร้านรับตรวจเช็คและประเมินงานเปลี่ยนหน้าจอได้ครับ  \nประเมินเบื้องต้นเริ่มต้นตามรุ่นเครื่องที่รองรับ แต่ราคาสุทธิจะขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติมทางร้านจะแจ้งราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ  \nขอทราบรุ่นเต็มของเครื่องครับ",
+     "route": "advice",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": false,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "vision_ms": 1587,
+      "router_ms": 1804,
+      "retrieval_ms": 562,
+      "generation_ms": 1963,
+      "total_ms": 6362
+     },
+     "elapsed_ms": 6372,
+     "image_ids": [
+      "92f0eb2cf69ee79e01e7267b39b75851"
+     ]
+    }
+   ]
+  }
+ ],
+ "replay": [],
+ "paraphrase": []
+}

@@ -35,7 +35,11 @@ def init_db():
         CREATE TABLE IF NOT EXISTS payments(id INTEGER PRIMARY KEY AUTOINCREMENT,case_id INTEGER NOT NULL REFERENCES cases(id),quote_id INTEGER NOT NULL REFERENCES case_quotes(id),user_id TEXT NOT NULL REFERENCES users(id),amount_satang INTEGER NOT NULL,currency TEXT NOT NULL DEFAULT 'thb',session_id TEXT UNIQUE,checkout_url TEXT,status TEXT NOT NULL CHECK(status IN ('pending','paid','expired','failed')),created REAL NOT NULL,updated REAL NOT NULL,paid_at REAL);
         CREATE UNIQUE INDEX IF NOT EXISTS payments_one_paid_per_quote ON payments(quote_id) WHERE status='paid';
         CREATE TABLE IF NOT EXISTS stripe_events(id TEXT PRIMARY KEY,type TEXT NOT NULL,received REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS chat_images(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),conversation_id TEXT REFERENCES conversations(id),kind TEXT NOT NULL,observation TEXT NOT NULL DEFAULT '',storage TEXT NOT NULL,key TEXT NOT NULL,size INTEGER NOT NULL,sha256 TEXT NOT NULL,created REAL NOT NULL);
+        CREATE INDEX IF NOT EXISTS chat_images_conversation ON chat_images(conversation_id);
         """)
+        if 'image_ids' not in [r[1] for r in c.execute('PRAGMA table_info(messages)')]:
+            c.execute("ALTER TABLE messages ADD COLUMN image_ids TEXT NOT NULL DEFAULT ''")
         # Preserve existing waiting cases, adding a versioned quote once.
         c.execute("INSERT INTO case_quotes(case_id,amount,status,created) SELECT id,quoted_price,'pending',updated FROM cases WHERE status='awaiting_approval' AND quoted_price IS NOT NULL AND NOT EXISTS(SELECT 1 FROM case_quotes WHERE case_id=cases.id)")
         password=os.getenv('ADMIN_PASSWORD','')
@@ -125,10 +129,10 @@ def conversation(u,cid=None,title='บทสนทนาใหม่'):
 def history(cid):
     with db() as c:rows=c.execute('SELECT role,content FROM messages WHERE conversation_id=? ORDER BY id DESC LIMIT 8',(cid,)).fetchall()
     return [dict(r) for r in reversed(rows)]
-def save_turn(cid,text,answer,image_count):
+def save_turn(cid,text,answer,image_count,image_ids=()):
     with db() as c:
         now=time.time()
-        c.executemany('INSERT INTO messages(conversation_id,role,content,image_count,created) VALUES(?,?,?,?,?)',[(cid,'user',text,image_count,now),(cid,'assistant',answer,0,now)])
+        c.executemany('INSERT INTO messages(conversation_id,role,content,image_count,created,image_ids) VALUES(?,?,?,?,?,?)',[(cid,'user',text,image_count,now,','.join(image_ids)),(cid,'assistant',answer,0,now,'')])
         c.execute('UPDATE conversations SET updated=? WHERE id=?',(now,cid))
 @router.get('/member/conversations')
 def list_conversations(request:Request):
@@ -138,8 +142,20 @@ def list_conversations(request:Request):
 @router.get('/member/conversations/{cid}')
 def get_conversation(cid:str,request:Request):
     u=user(request);conversation(u,cid)
-    with db() as c:rows=c.execute('SELECT role,content,image_count,created FROM messages WHERE conversation_id=? ORDER BY id LIMIT 500',(cid,)).fetchall()
-    return {'id':cid,'messages':[dict(r) for r in rows]}
+    with db() as c:rows=c.execute('SELECT role,content,image_count,created,image_ids FROM messages WHERE conversation_id=? ORDER BY id LIMIT 500',(cid,)).fetchall()
+    return {'id':cid,'messages':[message_data(r) for r in rows]}
+def message_data(row):
+    d=dict(row);d['image_ids']=[x for x in (d.get('image_ids') or '').split(',') if x];return d
+def save_image(u,cid,image_id,kind,observation,storage,key,size,sha):
+    with db() as c:c.execute('INSERT INTO chat_images VALUES(?,?,?,?,?,?,?,?,?,?)',(image_id,u['id'],cid,kind,observation[:1000],storage,key,size,sha,time.time()))
+def image_for(u,image_id):
+    """The owner sees their images; an admin sees images of conversations attached to a repair case."""
+    with db() as c:
+        row=c.execute('SELECT * FROM chat_images WHERE id=?',(image_id,)).fetchone()
+        if not row:return None
+        if row['user_id']==u['id']:return row
+        if u['role']=='admin' and c.execute('SELECT 1 FROM cases WHERE conversation_id=?',(row['conversation_id'],)).fetchone():return row
+    return None
 
 class CaseBody(BaseModel):
     model_config=ConfigDict(extra='forbid')
@@ -205,9 +221,10 @@ def admin_case(cid:int,request:Request):
     with db() as c:
         row=c.execute('SELECT * FROM cases WHERE id=?',(cid,)).fetchone()
         if not row:raise HTTPException(404,'ไม่พบเคส')
-        messages=c.execute('SELECT role,content,image_count,created FROM messages WHERE conversation_id=? ORDER BY id LIMIT 500',(row['conversation_id'],)).fetchall() if row['conversation_id'] else []
+        messages=c.execute('SELECT role,content,image_count,created,image_ids FROM messages WHERE conversation_id=? ORDER BY id LIMIT 500',(row['conversation_id'],)).fetchall() if row['conversation_id'] else []
         events=c.execute('SELECT status,note,created FROM case_events WHERE case_id=? ORDER BY id',(cid,)).fetchall()
-    return {'case':case_data(row),'messages':[dict(r) for r in messages],'events':[dict(r) for r in events]}
+        images=c.execute('SELECT id,kind,observation,created FROM chat_images WHERE conversation_id=? ORDER BY created',(row['conversation_id'],)).fetchall() if row['conversation_id'] else []
+    return {'case':case_data(row),'messages':[message_data(r) for r in messages],'events':[dict(r) for r in events],'images':[dict(r) for r in images]}
 class CaseUpdate(BaseModel):
     model_config=ConfigDict(extra='forbid')
     status:str
