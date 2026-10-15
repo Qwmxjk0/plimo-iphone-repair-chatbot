@@ -9,3 +9,8 @@
 
 .action-bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 button,textarea,input,select{color:inherit}textarea::placeholder{color:#6e6e73}.brand-mark{color:#fff}
+
+/* Chat uses the site icon ("p." on black) instead of a blue letter tile. */
+.assistant-avatar{height:22px;width:22px;border-radius:6px;display:block;background:none;box-shadow:0 0 0 1px rgba(255,255,255,.18)}
+.assistant-label{color:#d2d2d7}
+img.brand-mark{display:block;width:44px;height:44px;border-radius:12px;background:none;box-shadow:0 0 0 1px rgba(255,255,255,.18)}

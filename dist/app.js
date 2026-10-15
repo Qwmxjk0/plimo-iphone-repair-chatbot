@@ -70,7 +70,7 @@ function message(role, text, images = [], storedIds = []) {
   const row = document.createElement('article'); row.className = 'message ' + role + '-message';
   if (role === 'assistant') {
     const label = document.createElement('div'); label.className = 'assistant-label';
-    const avatar = document.createElement('span'); avatar.className = 'assistant-avatar'; avatar.textContent = 'p';
+    const avatar = document.createElement('img'); avatar.className = 'assistant-avatar'; avatar.src = 'assets/icons/icon-192.png'; avatar.alt = ''; avatar.width = 22; avatar.height = 22;
     label.append(avatar, document.createTextNode('ผู้ช่วย Plimo')); row.append(label);
   }
   if (images.length) {
