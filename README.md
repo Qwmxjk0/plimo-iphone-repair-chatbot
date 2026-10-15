@@ -1,162 +1,144 @@
-# Plimo — ร้านซ่อม iPhone + AI Chatbot (RAG)
+# Plimo — iPhone Repair Chatbot
 
-เว็บร้านซ่อม iPhone หน้าเดียวพร้อมผู้ช่วยแชทภาษาไทย ตอบจากข้อมูลร้านจริง (LightRAG + OpenAI) รองรับข้อความและภาพ มีระบบสมาชิก ประวัติแชท เคสซ่อม การอนุมัติใบเสนอราคา และ**การชำระเงินผ่าน Stripe (โหมดทดสอบ)** พร้อมหน้า Admin
+An LLM-first customer assistant and admin copilot for a Thai iPhone repair shop. Customers ask in everyday Thai (text or photos), open and track repair cases, approve quotes and pay online; staff get AI case summaries, catalog-checked quote suggestions and daily insights.
 
-> **บนเซิร์ฟเวอร์จริง (https://203-156-66-86.sslip.io, 15 ต.ค. 2026):** eval คุณภาพคำตอบ **143/143** · API ครบ **24/24 endpoint** (33/33 checks) · สุ่มกติกา ต้องทำ/ห้ามทำ **33/33** · RAG hit@3 **98%** · security OWASP **51/51** · วงจรเคสเปิด→ปิดด้วย AI **16/16** · ชำระเงิน Stripe (test) จริง ✅ · unit **101/101** — **สรุปสำหรับส่งอาจารย์: [qa/results/SUMMARY.md](qa/results/SUMMARY.md)** · เนื้อหานำเสนอ: [qa/presentation.md](qa/presentation.md)
+**Live demo:** https://203-156-66-86.sslip.io · **ภาษาไทย:** [docs/README.th.md](docs/README.th.md)
 
-## เปิดใช้งาน
-
-| ที่ไหน | URL | หมายเหตุ |
+| Storefront | Chat (multi-turn) | Admin AI assist |
 |---|---|---|
-| VPS (HTTPS) | **https://203-156-66-86.sslip.io** | ติดตั้งด้วย `deploy/install.sh` |
-| Docker บนเครื่อง | http://127.0.0.1:8081 | ดูหัวข้อ "ติดตั้งบนเครื่อง" |
+| ![Storefront](docs/screenshots/storefront.jpg) | ![Chat](docs/screenshots/chat-mobile.jpg) | ![Admin AI assist](docs/screenshots/admin-ai-assist.jpg) |
 
-บัญชีตัวอย่าง: `demo_user` / `PlimoMemberDemo2026!` (สมาชิก มีประวัติแชทและเคสตัวอย่าง) ส่วน Admin บน Docker เครื่องใช้ `demo_admin` / `PlimoAdminDemo2026!` ได้ แต่บน VPS บัญชีนี้ถูกล็อกเพราะรหัสอยู่ใน repo ให้ใช้ `ADMIN_USERNAME` / `ADMIN_PASSWORD` ใน `.env` ของเซิร์ฟเวอร์ (ส่งให้ผู้ตรวจแยกต่างหาก)
+## Highlights
 
-ชำระเงินโหมดทดสอบ: บัตร `4242 4242 4242 4242` วันหมดอายุในอนาคต CVC ใดก็ได้ **ไม่มีการตัดเงินจริง**
+- **Grounded answers, not guesses.** Prices come only from the shop catalog and every answer is checked: an amount the catalog does not back is replaced. Pro / Pro Max never inherit base-model prices. Unknown facts (warranty, address, repair time) are answered as "not confirmed" instead of invented.
+- **The model proposes, the system confirms.** Opening a case or approving a quote from chat is a stored proposal that runs only after the customer types "ยืนยัน", with ownership and state re-checked. Case status and payments are read from the database, never generated.
+- **Measured RAG.** Knowledge is split into 53 sections and retrieval is scored on its own (hit@1 / hit@3 / MRR). Tuning moved hit@1 from 31% to 72–88% and hit@3 to 98–100%.
+- **Cheap and fast.** Six cache layers with single-flight, OpenAI prompt caching and a daily USD budget: about **$0.0028 per new answer**, cached answers in milliseconds.
+- **Defence in depth.** Input guards, an LLM router, output validators, rate limits, PII masking, image moderation and triage, signed payment webhooks. Mapped to OWASP Top 10 for LLM 2026 and OWASP Top 10:2025.
+- **Tested end to end.** 143 graded answer cases, every API endpoint, randomized do/don't prompt rules, 51 security checks, the full case lifecycle and a real Stripe test payment, all on the public server.
 
-## ลำดับสาธิต (ประมาณ 5 นาที)
+## Features
 
-1. ถาม `ไอโฟน13 จอแตก กี่ตังค์` → `แล้ว 14 ล่ะ` → `Pro Max ล่ะ` (ราคาตรงรุ่น, จำบริบท, ไม่ใช้ราคารุ่นปกติกับ Pro Max)
-2. ถาม `เว็บบอกเปลี่ยนจอ iPhone 13 ราคา 500 ใช่ไหม` (แก้ราคาด้วยข้อมูลจริง) และ `เขียน Python ให้หน่อย` (ปฏิเสธนอกขอบเขต)
-3. เข้าสู่ระบบ `demo_user` → งานซ่อมของฉัน → อนุมัติใบเสนอ → กดชำระเงิน (บัตรทดสอบ) → กลับมาเห็น "ชำระแล้ว"
-4. ในแชทพิมพ์ `ไอโฟน 13 จอแตก อยากส่งซ่อม` → กด "ยืนยัน" ได้เลขเคส → แอดมินกด "AI ช่วยวิเคราะห์เคส" → "ใช้คำแนะนำ" ส่งใบเสนอ 3,200 → ลูกค้าพิมพ์ `อนุมัติราคา` → ยืนยัน → แอดมินใช้ AI เริ่มซ่อม/ปิดเคส
-5. Admin → เห็นสถานะการชำระ → เริ่มซ่อม / ดู `/api/admin/metrics` (token, cache hit, guard)
+**Customers (no account needed)**
+- Thai Q&A about services, prices, opening hours and symptoms, with follow-ups ("แล้ว 14 ล่ะ" → iPhone 14 price)
+- Up to 3 photos per message (iPhone HEIC supported): cracked screens, battery health, alerts, payment slips
+- Vague questions get one clarifying question; several questions in one message are all answered
 
-## ฟีเจอร์
+**Members**
+- Open a repair case from chat; the assistant asks for a missing model or symptom, then waits for confirmation
+- Track cases by number in any form (PLM-00012, plm12, เคส 12, Thai digits)
+- Approve or reject quotes in chat or in the account page; pay with Stripe Checkout (test mode)
+- Chat history, private photo storage and a case timeline
 
-| ID | ฟีเจอร์ | สิ่งที่ตรวจได้ |
+**Admin**
+- Case board with an enforced status flow (submitted → received → checking → awaiting approval → repairing → ready → closed)
+- AI case assist: summary, missing information, next status, quote from the catalog, draft note to the customer (all validated)
+- Daily insights (top questions, questions the bot could not answer) and metrics (cache hit rate, tokens, AI cost)
+
+## Architecture
+
+![Architecture](qa/diagrams/stack-flow.png)
+
+Request path: **guards → cache → router → (SQLite for cases/payments) or (catalog + RAG + answer LLM + validator)**. Details, cache keys and flows: [qa/diagrams/architecture.md](qa/diagrams/architecture.md).
+
+| Layer | Technology |
+|---|---|
+| Frontend | Plain HTML / CSS / JS (no framework), dark theme, WebP images |
+| Edge | Caddy (automatic HTTPS) + nginx (static files, CSP, rate limits) |
+| Backend | Python 3.12, FastAPI, Uvicorn |
+| LLM | OpenAI `gpt-5.4-mini` via the Responses API with JSON schema; omni-moderation for images |
+| RAG | LightRAG (naive vector mode) + `text-embedding-3-small` |
+| Data | Redis 7.4 (cache, limits, sessions), SQLite (members, cases, quotes, payments) |
+| Storage / payments | Cloudflare R2 (private images), Stripe Checkout + webhook (test mode) |
+| Ops | Docker Compose, one-command VPS install, daily backups, pinned images and dependencies |
+
+## Test results (public server)
+
+| Suite | Result | Report |
 |---|---|---|
-| F01–F02 | เว็บร้าน + แค็ตตาล็อก 16 รายการ ค้นหา/กรอง | ราคาประเมินเบื้องต้น ภาพ WebP โหลดแบบ lazy |
-| F03 | Chatbot ภาษาไทย RAG + OpenAI | ตอบจากข้อมูลร้าน มีแหล่งข้อมูลประกอบ |
-| F04 | ราคาตรงรุ่นจาก catalog + ตรวจตัวเลขในคำตอบ | Pro / Pro Max / mini / Plus / Air ไม่ได้ราคารุ่นปกติ, รวมราคาและส่วนต่างถูกต้อง |
-| F05 | แนบภาพ (สูงสุด 3 ภาพ) | อ่านข้อความในภาพ ไม่ฟันธงวินิจฉัย ไม่ยืนยันสลิป |
-| F06 | Cache หลายชั้นใช้ร่วมข้ามผู้ใช้ + single-flight | คำถามซ้ำ/ต่างสำนวนตอบในหลักมิลลิวินาที ไม่รั่วข้อมูลข้ามผู้ใช้ |
-| F07–F08 | สมาชิก + ประวัติแชท | แยกข้อมูลตามเจ้าของ |
-| F09–F11 | ส่งเคส PLM-xxxxx, ติดตามสถานะ, Admin จัดการเคส | timeline, หมายเหตุ, สถิติ |
-| F12 | สิทธิ์สมาชิก/Admin | 401/403/404 ตามสิทธิ์ |
-| F15 | ติดตามเคสผ่านแชท | เลขเคสทุกรูปแบบ (`PLM12`, `plm-12`, เลขไทย, พิมพ์ติดคำไทย), ถามต่อเรื่องราคา/โน้ต/การชำระ, เคสคนอื่นตอบเหมือนไม่มี |
-| F16 | อนุมัติ/ปฏิเสธใบเสนอราคา | ใบเก่าตอบไม่ได้, เริ่มซ่อมต้องอนุมัติ |
-| F17 | Guardrails + OWASP | input guard, router, output validator ดู [qa/guardrails.md](qa/guardrails.md) |
-| F18 | Router คำถาม | แยกราคา/ข้อมูลร้าน/เคส/การชำระ/กำกวม/นอกขอบเขต/ไม่ปลอดภัย, เขียนคำถามต่อเนื่องเป็นฉบับเต็ม |
-| F19 | ชำระเงิน Stripe Checkout (โหมดทดสอบ) | จ่ายได้เฉพาะใบเสนอที่อนุมัติ, ยืนยันกับ Stripe ฝั่ง server + webhook ลงลายเซ็น |
-| F20 | ควบคุมค่าใช้จ่าย | เพดานค่าใช้จ่ายรายวัน (USD), quota ต่อสมาชิก/session/IP, นับ token จริงทุก call |
-| F22 | เปิด→ปิดเคสด้วย AI (ฝั่งลูกค้า) | บอกอาการในแชท → AI ถามรุ่น/อาการที่ขาด → เสนอเปิดเคส → ลูกค้ากด "ยืนยัน" จึงสร้างเคส; อนุมัติ/ปฏิเสธใบเสนอผ่านแชทแบบยืนยันซ้ำ; ปุ่มไปหน้าชำระ Stripe |
-| F23 | AI ช่วยแอดมิน | สรุปเคสจากแชท, ข้อมูลที่ต้องถามเพิ่ม, แนะนำสถานะถัดไปและราคาจากแค็ตตาล็อก, ร่างหมายเหตุถึงลูกค้า, ร่างสรุปปิดเคส — แอดมินกด "ใช้คำแนะนำ" แล้วบันทึกเอง; ทุกค่าตรวจกับสถานะที่เปลี่ยนได้และแค็ตตาล็อก |
-| F24 | Insight รายวันสำหรับเจ้าของร้าน | คำถามที่ถามบ่อย, คำถามที่บอทตอบว่าไม่มีข้อมูล (ช่องว่างความรู้), ข้อเสนอแนะจาก AI — เก็บเฉพาะคำถามที่ตัดข้อมูลส่วนตัวแล้ว |
-| F21 | ติดตั้ง VPS คำสั่งเดียว | HTTPS อัตโนมัติ, firewall, backup รายวัน, healthcheck, log rotation |
+| Answer quality eval (9 categories) | **143/143** | [eval-vps.md](qa/results/eval-vps.md) |
+| Every API endpoint + access control | **24/24 endpoints**, 33/33 checks | [api-check-vps.md](qa/results/api-check-vps.md) |
+| Randomized do/don't prompt rules | **33/33** (17 rules) | [prompt-rules-vps.md](qa/results/prompt-rules-vps.md) |
+| RAG retrieval (40 labelled questions) | hit@1 72%, **hit@3 98%**, MRR 0.85 | [retrieval-vps.md](qa/results/retrieval-vps.md) |
+| Security, OWASP Top 10:2025 | **51/51** | [security-vps.md](qa/results/security-vps.md) |
+| Case lifecycle with AI (open → close) | **16/16** steps | [lifecycle-vps.md](qa/results/lifecycle-vps.md) |
+| Stripe test payment + webhook | paid, both events delivered | [stripe-payment-vps.md](qa/results/stripe-payment-vps.md) |
+| Unit / contract (mocked providers) | **101/101** | [unit-latest.md](qa/results/unit-latest.md) |
 
-## ติดตั้งบน VPS (Ubuntu 22.04/24.04)
+Course submission summary (Thai): [qa/results/SUMMARY.md](qa/results/SUMMARY.md). How each suite works: [qa/README.md](qa/README.md). Guardrails and OWASP mapping: [qa/guardrails.md](qa/guardrails.md).
 
-จากเครื่องของคุณ (ต้อง SSH เข้า VPS ได้):
+## Run locally
 
-```bash
-bash deploy/deploy.sh root@<IP ของ VPS>
-```
-
-หรือคัดลอกโปรเจกต์ขึ้น VPS เองแล้วรันในโฟลเดอร์โปรเจกต์:
-
-```bash
-sudo bash deploy/install.sh
-```
-
-สคริปต์จะถาม OpenAI API key และ Stripe test key (ไม่แสดงบนจอ), สร้างรหัส admin/LightRAG แบบสุ่ม, ตั้ง HTTPS อัตโนมัติที่ `https://<IP>.sslip.io` (หรือโดเมนที่ส่งเป็น argument), build, รอระบบพร้อม, สร้างคลังข้อมูล, ใส่ข้อมูลตัวอย่าง และตั้ง backup ทุกวัน 03:17 ตอนจบจะแสดง URL และขั้นตอนตั้ง Stripe webhook
-
-ขนาดที่แนะนำ: 2 vCPU / 4 GB RAM (โมเดลทำงานที่ OpenAI ไม่ได้รันบน VPS)
-
-## ติดตั้งบนเครื่อง
+Requirements: Docker Desktop, an OpenAI API key.
 
 ```bash
 cp .env.example .env
 ```
 
-ใส่ `OPENAI_API_KEY`, `LIGHTRAG_API_KEY` (สุ่มเอง), `ADMIN_PASSWORD` (≥10 ตัว) และ `STRIPE_SECRET_KEY=sk_test_...` ถ้าจะทดสอบการชำระเงิน แล้วรัน
+Set `OPENAI_API_KEY`, a random `LIGHTRAG_API_KEY` and `ADMIN_PASSWORD` (10+ characters). Optional: `STRIPE_SECRET_KEY=sk_test_...` for payments, the `R2_*` values for cloud image storage.
 
 ```bash
 docker compose --profile rag up -d --build
 ```
 
 ```bash
-docker compose exec api python ingest.py
+docker compose exec api python ingest.py --ensure
 ```
 
 ```bash
 docker compose exec api python seed_demo.py
 ```
 
-เปิด http://127.0.0.1:8081 (ingest ทำครั้งเดียวต่อ `KB_VERSION` รอ LightRAG ประมวลผลเสร็จก่อนถาม)
+Open http://127.0.0.1:8081. Demo member: `demo_user`; demo admin: `demo_admin`. Passwords are in [qa/member-demo.md](qa/member-demo.md). Test card: `4242 4242 4242 4242`, any future date, any CVC.
 
-ทดสอบ webhook บนเครื่องใช้ Stripe CLI: `stripe listen --forward-to http://127.0.0.1:8081/api/stripe/webhook` แล้วใส่ `whsec_...` ที่ได้ใน `STRIPE_WEBHOOK_SECRET` (ถ้าไม่ตั้ง ระบบยังยืนยันการจ่ายได้จากการดึง session ตอนกลับมาจาก Stripe)
+Run the tests:
 
-## สถาปัตยกรรม
+```bash
+docker compose exec -T api python -m unittest discover -s . -p 'test_*.py'
+```
 
-ดูแผนภาพและรายละเอียด cache ที่ [qa/diagrams/architecture.md](qa/diagrams/architecture.md)
+```bash
+python3 qa/run_eval.py
+```
 
-- **nginx + Caddy**: HTTPS, CSP และ security headers, rate limit ต่อ IP แบบรู้ IP จริงหลัง proxy
-- **FastAPI**: input guard → fast cache → router → (SQLite สำหรับเคส/การชำระ) หรือ (catalog + LightRAG + generation + validator)
-- **Redis**: cache 5 ชั้น, history, lock, rate limit, ตัวนับ token/cache
-- **SQLite**: สมาชิก, แชท, เคส, ใบเสนอ, การชำระ (backup รายวัน)
-- **LightRAG** (`RAG_MODE=naive`): คลังข้อมูลร้านจาก `knowledge/*.md` 5 ไฟล์ (~16,500 ตัวอักษร ≈ 6 หน้า A4 แยกตามหัวข้อ: ข้อมูลร้าน ขั้นตอนซ่อม/เคส การเตรียมเครื่อง อาการที่พบบ่อย บัญชี/แชท/รูป/ชำระเงิน) และ `dist/catalog.json` (หนึ่ง chunk สั้นต่อรายการ)
-- **OpenAI**: `gpt-5.4-mini` สำหรับ router, ภาพ และคำตอบ; `text-embedding-3-small` สำหรับคลัง
+## Deploy to a VPS
 
-## การทดสอบ
+Ubuntu 22.04 / 24.04, 2 vCPU / 4 GB RAM is enough (models run at OpenAI). From your machine, with SSH access to the server:
 
-วิธีรันทุกชั้นอยู่ใน [qa/README.md](qa/README.md) แผนและเกณฑ์ตรวจรับอยู่ใน [qa/production-plan.md](qa/production-plan.md)
+```bash
+bash deploy/deploy.sh ubuntu@<server-ip>
+```
 
-| ชั้น | ผลล่าสุด | รายงาน |
-|---|---|---|
-| Unit / contract (mock OpenAI/LightRAG/Stripe, Redis จริง) | 101/101 ผ่าน | [unit-latest.md](qa/results/unit-latest.md) |
-| Eval คุณภาพคำตอบกับ OpenAI + LightRAG จริง (บน VPS) | **143/143** — ข้อมูลร้าน 14, ราคา 30, กำกวม 16, หลายเทิร์น 8, ติดตามเคส 19, ภาพ 15, safety/OWASP LLM 20, ชำระเงิน 1, คลังความรู้ 20 | [eval-vps.md](qa/results/eval-vps.md) |
-| API ครบทุก endpoint (บน VPS) | 24/24 endpoint · 33/33 checks รวมสิทธิ์ 401/403/404 และ Stripe | [api-check-vps.md](qa/results/api-check-vps.md) |
-| สุ่มกติกา ต้องทำ/ห้ามทำ จาก system prompt (บน VPS) | 33/33 (17 กติกา, seed 2026) | [prompt-rules-vps.md](qa/results/prompt-rules-vps.md) |
-| RAG retrieval (40 คำถาม มีแหล่งที่ถูกต้องกำกับ) | hit@1 72%, hit@3 98%, hit@5 100%, MRR 0.85 (คลัง 53 หัวข้อ; ก่อนจูน hit@1 31%) | [retrieval-vps.md](qa/results/retrieval-vps.md) |
-| วงจรเคสเปิด→ปิดด้วย AI จริง (ลูกค้า + แอดมิน, บน VPS) | 16/16 ขั้น | [lifecycle-vps.md](qa/results/lifecycle-vps.md) |
-| Security OWASP Top 10:2025 (A01–A10, บน VPS) | 51/51 ผ่าน | [security-vps.md](qa/results/security-vps.md) |
-| ชำระเงินจริงผ่าน Stripe (test mode) | จ่ายสำเร็จ 3,200 บาท, webhook ส่งถึงทุก event | [stripe-payment-vps.md](qa/results/stripe-payment-vps.md) |
-| Load / performance | ดูหัวข้อถัดไป | [load-latest.md](qa/results/load-latest.md) |
+`deploy.sh` uploads the project and your local `.env`, then runs [deploy/install.sh](deploy/install.sh), which:
 
-**รอบเย็น (คลังความรู้ ~6 หน้า + ชุดทดสอบใหม่):** เพิ่มเอกสาร 4 ไฟล์และหมวด K 20 กรณี เจอ router ส่งคำถาม "สถานะนี้หมายถึงอะไร / ส่งรูปกี่รูป / ใครเห็นรูป" ผิดทาง (ไปเคส/นอกขอบเขต/ไม่ปลอดภัย) → แก้ router; เครดิต OpenAI หมดกลางรอบทำให้คลังล้มทั้งหมด → ทำ `ingest --ensure` ให้ deploy ซ่อมเองและไม่จ่ายซ้ำ; คำตอบมีคำว่า "ผม" และถามวันที่ → แก้ prompt; รอบสุดท้ายบน VPS 143/143 (K17 ตรวจคะแนนซ้ำเพราะตอบ "ยืนยันไม่ได้" ซึ่งความหมายเดียวกับเกณฑ์ บันทึกในรายงาน) ข้อที่ยังแปรปรวนได้คือคำถามต่อเนื่องหลายเทิร์นบางแบบ
+- installs Docker and sets up a firewall and swap
+- gets HTTPS automatically at `https://<ip>.sslip.io` (or pass a domain)
+- builds the stack and waits for health checks
+- indexes the knowledge base: unchanged sections are skipped at no cost and failed ones are retried
+- seeds demo data and schedules a daily backup
 
-ประวัติการรันวันนี้ (เก็บไฟล์ไว้ทุกรอบ): รอบแรก 111/113 พบ A14 (ขอส่วนลดถูกจัดเป็นคำสั่งไม่ปลอดภัย) และ M03 (รวมราคาข้ามเทิร์นหาย) → แก้ router; รอบถัดมาพบ A05 (คำถามที่สองในข้อความเดียวหาย) → แก้ router และ F11 ตัวตรวจนับ "ไม่รับซ่อม Samsung" เป็นคำตอบผิด → เปลี่ยนเป็นตัวตรวจที่เข้าใจคำปฏิเสธ; รอบ 08:28 ถูก rate limit ต่อ IP ของระบบเองตัดหลังกรณีที่ 75 จึงปรับค่าเริ่มต้นเป็น 1,200 ข้อความ/ชม./IP สำหรับห้องเรียนที่ใช้ NAT เดียวกัน แล้วรันใหม่ทั้งชุด
+Rerun the same command to deploy changes.
 
-**จูน RAG (บ่าย):** วัด retrieval แยกพบว่าเอกสารร้านก้อนใหญ่ชนะทุกคำถามราคา (hit@1 31%) จึง (1) เขียน chunk สินค้าใหม่ให้สั้นและเฉพาะ ไม่ซ้ำข้อความเงื่อนไขกลาง (2) แยก `shop.md` เป็นหัวข้อ (3) เลิกเติมข้อความนำหน้าคำค้น (4) เปลี่ยนเป็น `RAG_MODE=naive` ซึ่งได้คะแนนเท่า/ดีกว่า `mix` และเร็วกว่า → hit@1 88% จากนั้นรัน eval ทั้งชุดซ้ำ เจอและแก้ 4 จุด: LightRAG ตอบ "ไม่พบ" ถูกนับเป็นระบบล่ม (F10), รวมราคาข้ามรุ่นผิดคู่ (A15: ตอบ 5,390 แทน 4,690), ไม่บอกราคาสินค้าทดแทน (P17), อาการจอเป็นเส้นถูกฟันธง (A04) — รอบสุดท้าย 113/113 (S20 ตรวจคะแนนซ้ำเพราะตัวตรวจคำปฏิเสธช่วงสั้นไป บันทึกในรายงาน)
+For payments, add a Stripe webhook endpoint `https://<your-host>/api/stripe/webhook` with events `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `checkout.session.expired`, put its `whsec_...` into `STRIPE_WEBHOOK_SECRET`, and deploy again.
 
-## Performance และต้นทุน (วัดจริง)
+## Project layout
 
-| ตัวชี้วัด | ผล |
-|---|---|
-| คำถามใหม่ที่ไม่เคยถาม | p50 3.3 วินาที, p95 4.2 วินาที (router 1.6 · ค้นข้อมูลเสร็จก่อน router · สร้างคำตอบ 1.7) |
-| คำถามที่ router เคยเห็นแล้ว / ถามต่อเนื่อง | p50 1.7 วินาที (eval 62 คำตอบ); การค้นแบบ naive ~0.4 วินาที แทน mix ~1.6 วินาที |
-| คำถามที่อยู่ใน cache | backend p50 2 ms; ผ่าน HTTP 20 ผู้ใช้พร้อมกัน p50 41 ms, p95 96 ms, 376 คำขอ/วินาที, error 0 |
-| Cache hit | คำถามซ้ำ: ทุกข้อที่ cache ได้ (91% ของทั้งหมด ส่วนที่เหลือคือเคส/การชำระ/guard ที่ตั้งใจไม่ cache); ต่างสำนวน 8/8 |
-| Single-flight | คำถามใหม่เดียวกัน 20 คำขอพร้อมกัน → เรียก OpenAI 2 ครั้ง (แทน ~40), LightRAG 1 ครั้ง |
-| ค่า AI | ≈ $0.0028 (≈ 0.10 บาท) ต่อคำตอบใหม่ (router + คำตอบ), input 67–79% มาจาก prompt cache; คำตอบจาก cache ไม่เสียเงิน; มีเพดานค่าใช้จ่ายรายวัน (USD) |
-| หน้าเว็บ | น้ำหนักหน้าแรก ~4.5 MB → ~97 KB (WebP + lazy loading) |
-| RAM ทั้ง stack | ~420 MiB (แนะนำ VPS 2 vCPU / 4 GB) |
+```
+backend/     FastAPI app: router, RAG answer path, membership, payments, admin AI, tests
+dist/        Static storefront, chat widget, member and admin pages
+knowledge/   Shop knowledge base (Markdown, ~6 A4 pages)
+deploy/      deploy.sh, install.sh, Caddyfile, backup.sh
+qa/          Eval suites and runners, security checks, results, diagrams, docs
+docs/        Thai README, screenshots
+```
 
-รายละเอียดและสมมติฐานต้นทุนรายเดือนอยู่ใน [qa/cost-performance.md](qa/cost-performance.md)
+## Limitations
 
-## นโยบายคำตอบและราคา
+- Some shop facts are not confirmed yet (address, warranty, repair time), so the bot says so instead of answering.
+- Payments run in Stripe test mode only; live keys are refused.
+- No password reset, notifications or appointment booking yet.
+- LLM output varies: the suites pass, but some multi-turn phrasings can still be misread.
 
-เจ้าของอนุญาตให้ราคา 16 รายการเป็น**ราคาประเมินเบื้องต้น** ไม่ใช่ราคาสุทธิ ต้องตรวจเครื่อง รุ่น และอะไหล่ก่อนยืนยัน ค่าใช้จ่ายเพิ่มต้องส่งใบเสนอราคาใหม่ให้ลูกค้าอนุมัติก่อนเริ่มซ่อม Pro / Pro Max ประเมินแยก สินค้าต้องยืนยันสต็อกก่อนซื้อ แชทไม่รับเลขบัตรและไม่ยืนยันการชำระเงินเอง การชำระค่าซ่อมทำผ่านปุ่มในบัญชีหลังอนุมัติใบเสนอเท่านั้น
+## Credits and license
 
-แก้ข้อมูลร้าน: แก้ไฟล์ใน `knowledge/` หรือ `dist/catalog.json` → เปลี่ยน `KB_VERSION` ใน `.env` (ให้ cache คำตอบเก่าหมดอายุ) → deploy ระบบเทียบหัวข้อกับคลังเอง: ลบหัวข้อที่ถูกแก้/ลบ เพิ่มเฉพาะหัวข้อใหม่ และลองใหม่ให้หัวข้อที่เคยล้ม ถ้าไม่มีอะไรเปลี่ยนจะไม่เรียกโมเดลเลย (`python ingest.py --ensure`)
-
-## ข้อจำกัด
-
-- Stripe เป็นโหมดทดสอบ ไม่มีการคืนเงิน; ระบบปฏิเสธ key จริง (`sk_live_`)
-- ยังไม่มีที่อยู่ เบอร์ติดต่อ เงื่อนไขรับประกัน และระยะเวลาซ่อมที่ร้านยืนยัน บอทจึงตอบว่าไม่มีข้อมูลแทนการแต่ง
-- ยังไม่มีรีเซ็ตรหัสผ่าน การแจ้งเตือน และการจองคิว
-- PDPA: ซ่อนเลขบัตร/บัตรประชาชน เก็บภาพเฉพาะของสมาชิกแบบส่วนตัว (ไม่เก็บภาพบัตร/ภาพที่ไม่เกี่ยวข้อง) แต่ยังไม่มี privacy notice ที่ผ่านการตรวจทางกฎหมาย และยังไม่มีปุ่มลบบัญชีด้วยตนเอง
-- Guardrails ลดความเสี่ยงได้มาก แต่ไม่รับประกันว่าป้องกัน prompt injection หรือคำตอบผิดได้ทุกกรณี
-- ภาพทดสอบเป็นภาพสังเคราะห์ ไม่ใช่หลักฐานความแม่นยำในการวินิจฉัยเครื่องจริง
-
-## เอกสารเพิ่มเติม
-
-| เอกสาร | เนื้อหา |
-|---|---|
-| [qa/production-plan.md](qa/production-plan.md) | ปัญหาที่พบ, การออกแบบ, OWASP mapping, แผนทดสอบ, เป้าหมาย performance |
-| [qa/guardrails.md](qa/guardrails.md) | มาตรการ G01–G14 กับ OWASP LLM Top 10:2026 และ OWASP Top 10:2025 |
-| [qa/diagrams/architecture.md](qa/diagrams/architecture.md) | สถาปัตยกรรมและ cache |
-| [qa/cost-performance.md](qa/cost-performance.md) | ต้นทุน VPS/API และผลวัด |
-| [qa/results/](qa/results/) | ผลทดสอบจริงทุกชั้น (`*-latest.md`) และผลรอบก่อน |
+Code: [MIT](LICENSE). Photos: [Unsplash License](https://unsplash.com/license), photographers listed on the site's [credits page](dist/credits.html).
