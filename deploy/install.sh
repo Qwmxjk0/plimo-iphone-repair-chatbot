@@ -22,7 +22,10 @@ docker compose version
 
 log "2/7 Firewall (SSH, HTTP, HTTPS only)"
 if command -v ufw >/dev/null; then
-  SSH_PORT="${SSH_CONNECTION##* }"; ufw allow "${SSH_PORT:-22}/tcp" >/dev/null
+  # sudo drops SSH_CONNECTION; fall back to the port sshd listens on, then 22.
+  SSH_PORT="${SSH_CONNECTION:-}"; SSH_PORT="${SSH_PORT##* }"
+  [ -n "$SSH_PORT" ] || SSH_PORT="$(ss -tlnp 2>/dev/null | awk '/sshd/{sub(/.*:/,"",$4); print $4; exit}')"
+  ufw allow "${SSH_PORT:-22}/tcp" >/dev/null
   ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null; ufw allow 443/udp >/dev/null
   ufw --force enable >/dev/null && ufw status | head -8
 fi
