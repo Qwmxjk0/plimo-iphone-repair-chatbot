@@ -72,3 +72,17 @@
 #member-dialog input::placeholder,#member-dialog textarea::placeholder,.admin-main textarea::placeholder{color:#6e6e73}
 #member-close{color:#a1a1a6;background:transparent}
 button{color:inherit}
+
+/* Row actions: compact outline buttons; one filled primary per row. Form submits and pay stay filled. */
+#member-dialog .member-row .member-action{font-size:13px;line-height:1.4;padding:7px 14px;border-radius:999px;background:transparent;border:1px solid rgba(255,255,255,.18);color:#f5f5f7;cursor:pointer;white-space:nowrap}
+#member-dialog .member-row .member-action:hover{background:#26262a}
+#member-dialog .member-action.primary{background:#0a84ff;border-color:#0a84ff;color:#fff}
+#member-dialog .member-action.primary:hover{background:#2997ff}
+.conv-list{display:grid;gap:10px}
+#member-dialog .conv-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px}
+.conv-info{min-width:0}
+#member-dialog .conv-info strong{margin:0 0 2px;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conv-info small{font-size:12px;color:#a1a1a6}
+.row-actions{display:flex;gap:8px;flex-shrink:0}
+#member-dialog .row-actions .member-action{margin:0}
+@media(max-width:700px){#member-dialog .conv-row{flex-direction:column;align-items:stretch;gap:12px}.row-actions .member-action{flex:1}}

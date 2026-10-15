@@ -36,7 +36,7 @@ async function showMember(tab='cases'){
          const form=node('form','','quote-decision'),label=node('label','ตอบรับราคาเสนอ '+Number(quote.amount).toLocaleString('th-TH')+' บาท'),select=node('select');
          for(const [value,text] of [['','เลือกการตัดสินใจ'],['approve','อนุมัติราคานี้'],['reject','ปฏิเสธ / ขอประเมินใหม่']]){const option=node('option',text);option.value=value;select.append(option);}select.required=true;label.append(select);form.append(label);
          const note=field(form,'หมายเหตุ (ไม่จำเป็น)','text',false);note.maxLength=1000;form.append(node('p','การอนุมัติครอบคลุมใบเสนอราคานี้เท่านั้น หากมีค่าใช้จ่ายเพิ่ม ร้านต้องส่งราคาใหม่ให้คุณอนุมัติก่อนเริ่มซ่อม ยังไม่มีการชำระเงินผ่านเว็บไซต์','member-hint'));
-         const submit=node('button','ยืนยันคำตอบ','member-action');submit.type='submit';form.append(submit);form.onsubmit=async e=>{e.preventDefault();submit.disabled=true;me.textContent='';try{await memberApi('/member/cases/'+c.id+'/quote-decision','POST',{quote_id:quote.id,decision:select.value,note:note.value});await showMember('cases');}catch(err){fail(err);submit.disabled=false;}};row.append(form);
+         const submit=node('button','ยืนยันคำตอบ','member-action primary');submit.type='submit';form.append(submit);form.onsubmit=async e=>{e.preventDefault();submit.disabled=true;me.textContent='';try{await memberApi('/member/cases/'+c.id+'/quote-decision','POST',{quote_id:quote.id,decision:select.value,note:note.value});await showMember('cases');}catch(err){fail(err);submit.disabled=false;}};row.append(form);
        }else if(quote.status==='approved'&&c.status==='awaiting_approval')row.append(node('p','รอร้านเริ่มซ่อมตามราคาที่คุณอนุมัติ','member-hint'));
      }
      if(c.payment?.status==='paid')row.append(node('p','ชำระแล้ว '+Number(c.payment.amount).toLocaleString('th-TH')+' บาท (Stripe โหมดทดสอบ)','payment-paid'));
@@ -50,7 +50,12 @@ async function showMember(tab='cases'){
    }mb.append(list);
  }else if(tab==='history'){
    const d=await memberApi('/member/conversations');if(!d.conversations.length)mb.append(node('p','แชทหลังเข้าสู่ระบบจะปรากฏที่นี่','member-hint'));
-   for(const c of d.conversations){const row=node('article','','member-row');row.append(node('strong',c.title),node('small',new Date(c.updated*1000).toLocaleString('th-TH')),action('เปิดบทสนทนา',()=>{selectedConversation=c.id;resetMemberChat(c.id);md.close();document.querySelector('#chat-panel').hidden=false;window.syncFloating?.();}),action('ใช้บทสนทนานี้ส่งเคส',()=>{selectedConversation=c.id;showMember('new');}));mb.append(row);}
+   const list=node('div','','conv-list');
+   for(const c of d.conversations){const row=node('article','','member-row conv-row'),info=node('div','','conv-info'),buttons=node('div','','row-actions');
+     info.append(node('strong',c.title),node('small',new Date(c.updated*1000).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})));
+     const open=action('เปิดบทสนทนา',()=>{selectedConversation=c.id;resetMemberChat(c.id);md.close();document.querySelector('#chat-panel').hidden=false;window.syncFloating?.();});open.classList.add('primary');
+     buttons.append(open,action('ใช้ส่งเคส',()=>{selectedConversation=c.id;showMember('new');}));row.append(info,buttons);list.append(row);}
+   mb.append(list);
  }else{
    mb.append(node('p','ส่งคำขอให้ร้านตรวจสอบก่อน การส่งคำขอยังไม่ยืนยันว่าร้านได้รับเครื่องหรือรับนัดหมายแล้ว','member-hint'));
    if(selectedConversation)mb.append(node('p','แนบบทสนทนาที่เลือกแล้ว ผู้ดูแลจะอ่านได้เมื่อเปิดเคสนี้','member-hint'));
