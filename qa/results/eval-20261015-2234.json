@@ -1,0 +1,510 @@
+{
+ "summary": {
+  "started": "2026-10-15T22:34:24.183339+07:00",
+  "base": "http://127.0.0.1:8081",
+  "cases": 9,
+  "passed": 7,
+  "by_category": {
+   "M": {
+    "passed": 7,
+    "total": 8
+   },
+   "K": {
+    "passed": 0,
+    "total": 1
+   }
+  },
+  "latency_uncached_ms": {
+   "p50": null,
+   "p95": null,
+   "n": 0
+  },
+  "replay": {
+   "n": 0,
+   "hit_rate": null,
+   "p50_ms": null,
+   "p95_ms": null
+  },
+  "paraphrase": {
+   "n": 0,
+   "hit_rate": null
+  },
+  "tokens": {
+   "tokens_total": 0,
+   "tokens_in": 0,
+   "tokens_out": 0,
+   "tokens_cached": 0,
+   "llm_calls": 0
+  },
+  "tokens_per_turn": 0,
+  "values": {
+   "ref_waiting": "PLM-00071",
+   "ref_waiting_lower": "plm-71",
+   "ref_waiting_nodash": "PLM71",
+   "ref_waiting_thai": "PLM-๐๐๐๗๑",
+   "n_waiting": "71",
+   "ref_repairing": "PLM-00072",
+   "ref_other": "PLM-00074",
+   "ref_new": "PLM-00073"
+  }
+ },
+ "results": [
+  {
+   "id": "M01",
+   "cat": "M",
+   "title": "แล้ว 14 ล่ะ",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "จอ iPhone 13 เท่าไหร่",
+     "status": 200,
+     "answer": "เปลี่ยนหน้าจอ iPhone 13 ประเมินเบื้องต้นเริ่มต้น 3,200 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": true,
+      "router": false,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 4
+     },
+     "elapsed_ms": 9,
+     "image_ids": []
+    },
+    {
+     "text": "แล้ว 14 ล่ะ",
+     "status": 200,
+     "answer": "เปลี่ยนหน้าจอ iPhone 14 ประเมินเบื้องต้นเริ่มต้น 3,900 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "router_ms": 1,
+      "total_ms": 6
+     },
+     "elapsed_ms": 2112,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "M02",
+   "cat": "M",
+   "title": "แล้ว Pro Max ล่ะ",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "จอ iPhone 13 เท่าไหร่",
+     "status": 200,
+     "answer": "เปลี่ยนหน้าจอ iPhone 13 ประเมินเบื้องต้นเริ่มต้น 3,200 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": true,
+      "router": false,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 4
+     },
+     "elapsed_ms": 2095,
+     "image_ids": []
+    },
+    {
+     "text": "แล้ว 14 ล่ะ",
+     "status": 200,
+     "answer": "เปลี่ยนหน้าจอ iPhone 14 ประเมินเบื้องต้นเริ่มต้น 3,900 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "router_ms": 1,
+      "total_ms": 3
+     },
+     "elapsed_ms": 2101,
+     "image_ids": []
+    },
+    {
+     "text": "Pro Max ล่ะ",
+     "status": 200,
+     "answer": "รุ่น iPhone 14 Pro Max ไม่มีราคาในระบบครับ ต้องนำเครื่องเข้ามาตรวจเช็คเพื่อประเมินแยกก่อน ทางร้านจึงยังไม่สามารถแจ้งราคาเปลี่ยนหน้าจอได้ครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "router_ms": 2,
+      "total_ms": 6
+     },
+     "elapsed_ms": 2108,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "M03",
+   "cat": "M",
+   "title": "รวมจอด้วย",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "แบต iPhone 12 เท่าไหร่",
+     "status": 200,
+     "answer": "เปลี่ยนแบตเตอรี่ iPhone 12 ประเมินเบื้องต้นเริ่มต้น 990 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้ลูกค้าอนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": true,
+      "router": false,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 3
+     },
+     "elapsed_ms": 2096,
+     "image_ids": []
+    },
+    {
+     "text": "ถ้าเปลี่ยนจอด้วยรวมเท่าไหร่",
+     "status": 200,
+     "answer": "รวมราคาประเมินเบื้องต้น 3,490 บาทครับ ราคานี้เป็นการรวมราคาเริ่มต้นของแต่ละรายการ ไม่ใช่ราคาเหมา และราคาสุทธิจะขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติมทางร้านจะแจ้งราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "router_ms": 1,
+      "total_ms": 4
+     },
+     "elapsed_ms": 2106,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "M04",
+   "cat": "M",
+   "title": "จำรุ่น 15 Pro",
+   "pass": false,
+   "failures": [
+    "forbidden number 4,900"
+   ],
+   "turns": [
+    {
+     "text": "ผมใช้ iPhone 15 Pro ครับ",
+     "status": 200,
+     "answer": "ส่งเคสซ่อมผ่านแชทได้หลังเข้าสู่ระบบครับ กดปุ่ม \"เข้าสู่ระบบ\" มุมขวาบน แล้วบอกรุ่นและอาการอีกครั้งได้เลยครับ",
+     "route": "case",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": false,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "router_ms": 41,
+      "total_ms": 45
+     },
+     "elapsed_ms": 2139,
+     "image_ids": []
+    },
+    {
+     "text": "เปลี่ยนจอเท่าไหร่",
+     "status": 200,
+     "answer": "ประเมินเบื้องต้นเริ่มต้น 1,900 บาทสำหรับ iPhone 11, 2,500 บาทสำหรับ iPhone 12, 3,200 บาทสำหรับ iPhone 13, 3,900 บาทสำหรับ iPhone 14, 4,900 บาทสำหรับ iPhone 15, 5,900 บาทสำหรับ iPhone 16 และ 6,900 บาทสำหรับ iPhone 17 ครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติมทางร้านจะเสนอราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ  \nขอทราบรุ่นเต็มของเครื่องก่อนครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "router_ms": 1,
+      "total_ms": 3
+     },
+     "elapsed_ms": 2062,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "M05",
+   "cat": "M",
+   "title": "เปลี่ยนเรื่องกลางคัน",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "จอ iPhone 13 เท่าไหร่",
+     "status": 200,
+     "answer": "เปลี่ยนหน้าจอ iPhone 13 ประเมินเบื้องต้นเริ่มต้น 3,200 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": true,
+      "router": false,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 5
+     },
+     "elapsed_ms": 2103,
+     "image_ids": []
+    },
+    {
+     "text": "ร้านเปิดกี่โมง",
+     "status": 200,
+     "answer": "ทางร้านเปิด 10:00–20:00 น. ทุกวัน ยกเว้นวันพุธครับ สามารถนำเครื่องเข้ามาตรวจเช็คฟรีที่ร้านได้ครับ",
+     "route": "shop_info",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "router_ms": 1,
+      "total_ms": 5
+     },
+     "elapsed_ms": 2100,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "M06",
+   "cat": "M",
+   "title": "แก้คำถาม",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "จอ iPhone 12 เท่าไหร่",
+     "status": 200,
+     "answer": "เปลี่ยนหน้าจอ iPhone 12 ประเมินเบื้องต้นเริ่มต้น 2,500 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะแจ้งราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": true,
+      "router": false,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 4
+     },
+     "elapsed_ms": 2102,
+     "image_ids": []
+    },
+    {
+     "text": "ขอโทษครับ หมายถึง iPhone 13",
+     "status": 200,
+     "answer": "เปลี่ยนหน้าจอ iPhone 13 ประเมินเบื้องต้นเริ่มต้น 3,200 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "router_ms": 1,
+      "total_ms": 5
+     },
+     "elapsed_ms": 2103,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "M07",
+   "cat": "M",
+   "title": "cache ร่วมไม่รั่วข้อมูลผู้ใช้อื่น",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "ผมชื่อสมชาย ใจดี เบอร์ 0812345678 อยากรู้ราคาจอ iPhone 13",
+     "status": 200,
+     "answer": "เปลี่ยนหน้าจอ iPhone 13 ประเมินเบื้องต้นเริ่มต้น 3,200 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": true,
+      "router": false,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 6
+     },
+     "elapsed_ms": 2103,
+     "image_ids": []
+    },
+    {
+     "text": "ราคาจอ iPhone 13",
+     "status": 200,
+     "answer": "เปลี่ยนหน้าจอ iPhone 13 ประเมินเบื้องต้นเริ่มต้น 3,200 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": true,
+      "router": false,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 3
+     },
+     "elapsed_ms": 2098,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "M08",
+   "cat": "M",
+   "title": "เริ่มบทสนทนาใหม่ต้องลืมบริบท",
+   "pass": true,
+   "failures": [],
+   "turns": [
+    {
+     "text": "จอ iPhone 13 เท่าไหร่",
+     "status": 200,
+     "answer": "เปลี่ยนหน้าจอ iPhone 13 ประเมินเบื้องต้นเริ่มต้น 3,200 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "price",
+     "guard": [],
+     "cache": {
+      "fast": true,
+      "router": false,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 4
+     },
+     "elapsed_ms": 2105,
+     "image_ids": []
+    },
+    {
+     "text": "แล้ว 14 ล่ะ",
+     "status": 200,
+     "answer": "เปลี่ยนหน้าจอ iPhone 14 ประเมินเบื้องต้นเริ่มต้น 3,900 บาทครับ ราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะแจ้งราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "ambiguous",
+     "guard": [],
+     "cache": {
+      "fast": true,
+      "router": false,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 3
+     },
+     "elapsed_ms": 2095,
+     "image_ids": []
+    }
+   ]
+  },
+  {
+   "id": "K20",
+   "cat": "K",
+   "title": "หลายเทิร์น: แบต → วิธีเช็คเอง",
+   "pass": false,
+   "failures": [
+    "none of สุขภาพแบตเตอรี่ / ความจุสูงสุด / สุขภาพแบต"
+   ],
+   "turns": [
+    {
+     "text": "แบตหมดไวมาก iPhone 12",
+     "status": 200,
+     "answer": "อาการแบตหมดไวของ iPhone 12 เข้าข่ายเปลี่ยนแบตเตอรี่ครับ ประเมินเบื้องต้นเริ่มต้น 990 บาท สำหรับ iPhone 12 ครับ  \nราคาสุทธิขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติม ทางร้านจะเสนอราคาใหม่ให้คุณอนุมัติก่อนเริ่มซ่อมครับ  \nถ้าต้องการ ทางร้านแนะนำให้นำเครื่องเข้ามาตรวจเช็คฟรีที่ร้านครับ",
+     "route": "advice",
+     "guard": [],
+     "cache": {
+      "fast": true,
+      "router": false,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "total_ms": 4
+     },
+     "elapsed_ms": 2100,
+     "image_ids": []
+    },
+    {
+     "text": "เช็คเองก่อนได้ไหม",
+     "status": 200,
+     "answer": "ได้ครับ อาการแบตหมดไวสามารถนำเครื่องมาที่ร้านให้ตรวจเช็คฟรีก่อนได้ครับ สำหรับ iPhone 12 ถ้าต้องเปลี่ยนแบตเตอรี่ ประเมินเบื้องต้นเริ่มต้น 990 บาทครับ แต่ราคาสุทธิจะขึ้นกับผลตรวจและอะไหล่ หากมีค่าใช้จ่ายเพิ่มเติมทางร้านจะแจ้งราคาใหม่ให้อนุมัติก่อนเริ่มซ่อมครับ",
+     "route": "advice",
+     "guard": [],
+     "cache": {
+      "fast": false,
+      "router": true,
+      "answer": true,
+      "retrieval": false,
+      "vision": false
+     },
+     "timings": {
+      "router_ms": 1,
+      "total_ms": 4
+     },
+     "elapsed_ms": 2102,
+     "image_ids": []
+    }
+   ]
+  }
+ ],
+ "replay": [],
+ "paraphrase": []
+}
