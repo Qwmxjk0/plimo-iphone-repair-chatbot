@@ -74,7 +74,8 @@ RAG_KEY = os.getenv("LIGHTRAG_API_KEY", "")
 MODE = os.getenv("RAG_MODE", "mix")
 KB_VERSION = os.getenv("KB_VERSION", "plimo-v1")
 PROMPT_VERSION = "thai-shop-estimate-v8"
-ANSWER_TTL = ROUTER_TTL = RETRIEVAL_TTL = 43200
+# Keys include KB, prompt, model and catalog versions, so a change never serves stale answers; long TTL = fewer paid repeats.
+ANSWER_TTL = ROUTER_TTL = RETRIEVAL_TTL = int(os.getenv("CACHE_TTL_SECONDS", str(7 * 86400)))
 TIME_TTL = 600
 PRIVATE_TTL = 1800
 VISION_TTL = HISTORY_TTL = 86400

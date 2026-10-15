@@ -54,15 +54,15 @@ def main():
     step('AI สรุปเคสจากแชทจริง (มีรุ่นและอาการ)', '13' in a.get('summary', '') and ('จอ' in a.get('summary', '') or 'ทัช' in a.get('summary', '')), a.get('summary'))
     step('AI แนะนำส่งใบเสนอ 3,200 บาทจากแค็ตตาล็อก', a.get('suggested_status') == 'awaiting_approval' and a.get('suggested_price') == 3200, {k: a.get(k) for k in ('suggested_status', 'suggested_price', 'warnings')})
     status, _ = apply(cid, a, 'awaiting_approval', 'เสนอราคาเปลี่ยนหน้าจอ')
-    step('แอดมินกดใช้คำแนะนำได้', status == 200 and case(cid)['quote']['amount'] == 3200, status)
+    step('แอดมินกดใช้คำแนะนำได้', status == 200 and (case(cid)['quote'] or {}).get('amount') == 3200, status)
 
     # 3. Customer checks status and approves by chat (with confirmation).
     _, d = say(f'PLM-{cid:05d} ถึงไหนแล้ว')
     step('ลูกค้าเห็นสถานะและราคาเสนอจากระบบ', 'รออนุมัติราคา' in d['answer'] and '3,200' in d['answer'], d['answer'])
     _, d = say('โอเค อนุมัติราคานี้ครับ')
-    step('AI เสนอให้อนุมัติใบเสนอ (รอยืนยัน)', d.get('pending') and case(cid)['quote']['status'] == 'pending', d.get('answer'))
+    step('AI เสนอให้อนุมัติใบเสนอ (รอยืนยัน)', d.get('pending') and (case(cid)['quote'] or {}).get('status') == 'pending', d.get('answer'))
     _, d = say('ยืนยัน')
-    step('ยืนยันแล้วใบเสนอเป็นอนุมัติ', case(cid)['quote']['status'] == 'approved', d.get('answer'))
+    step('ยืนยันแล้วใบเสนอเป็นอนุมัติ', (case(cid)['quote'] or {}).get('status') == 'approved', d.get('answer'))
     _, d = say('จ่ายเงินยังไงครับ')
     step('ถามการชำระได้คำตอบจากระบบ (ไม่รับเลขบัตรในแชท)', d.get('route') == 'payment' or 'ชำระ' in d['answer'], d['answer'])
 

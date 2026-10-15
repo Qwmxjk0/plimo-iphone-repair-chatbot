@@ -1,4 +1,4 @@
-# ผลตรวจความปลอดภัย (OWASP Top 10:2025) — 2026-10-15 15:53
+# ผลตรวจความปลอดภัย (OWASP Top 10:2025) — 2026-10-15 19:48
 
 เป้าหมาย: `https://203-156-66-86.sslip.io` · **ผ่าน 51/51**
 
@@ -11,7 +11,7 @@
 | A01 | W02 | สิทธิ์ admin: /api/admin/cases | ผ่าน | member 403, guest 401 |
 | A01 | W02 | สิทธิ์ admin: /api/admin/metrics | ผ่าน | member 403, guest 401 |
 | A01 | W02 | สิทธิ์ admin: /api/admin/insights | ผ่าน | member 403, guest 401 |
-| A01 | W02 | สิทธิ์ admin: /api/admin/cases/20 | ผ่าน | member 403, guest 401 |
+| A01 | W02 | สิทธิ์ admin: /api/admin/cases/30 | ผ่าน | member 403, guest 401 |
 | A01 | W02 | สิทธิ์ admin: AI วิเคราะห์เคส | ผ่าน | member 403, guest 401 |
 | A01 | W13 | CSRF: POST ข้าม origin ถูกปฏิเสธ | ผ่าน | HTTP 403 |
 | A02 | W03 | CSP ไม่มี unsafe-inline/eval และห้าม frame จากเว็บอื่น | ผ่าน | default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis |
@@ -37,8 +37,8 @@
 | A03 | W05 | backend/Dockerfile base image pin เวอร์ชัน | ผ่าน | FROM python:3.12.15-slim |
 | A03 | W05 | Python dependency ล็อกเวอร์ชันตรงที่ทดสอบ | ผ่าน | requirements.lock |
 | A02 | W05 | API container ไม่รันเป็น root | ผ่าน |  |
-| A04 | W06 | cookie สมาชิก HttpOnly + SameSite=Strict | ผ่าน | plimo_member=C0qB2cj5_wIT3g197FkNcWsoRYIiDvzEhGB4AWZccIM; Ht |
-| A04 | W06 | cookie มี Secure บน HTTPS | ผ่าน | plimo_member=C0qB2cj5_wIT3g197FkNcWsoRYIiDvzEhGB4AWZccIM; Ht |
+| A04 | W06 | cookie สมาชิก HttpOnly + SameSite=Strict | ผ่าน | plimo_member=4MQ7--K7AvEU3MneeNQa1TE5ouFKBHoXJ_uC3UH34KY; Ht |
+| A04 | W06 | cookie มี Secure บน HTTPS | ผ่าน | plimo_member=4MQ7--K7AvEU3MneeNQa1TE5ouFKBHoXJ_uC3UH34KY; Ht |
 | A07 | W09 | ปฏิเสธรหัสผ่านสั้น | ผ่าน | HTTP 422 |
 | A07 | W09 | brute force บัญชีเดียวถูกล็อก | ผ่าน | 401,401,401,401,401,401,401,401,401,429,429 |
 | A07 | W09 | บัญชีอื่นจาก IP เดียวกันยังเข้าได้ (NAT ห้องเรียน) | ผ่าน | HTTP 200 |

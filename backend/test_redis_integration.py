@@ -52,7 +52,7 @@ class RedisIntegration(test_chat.ChatTests):
         files={'images':('test.png',test_chat.photo(),'image/png')}
         self.assertEqual(self.client.post('/api/chat',data={'text':'ช่วยดูภาพ'},files=files).status_code,200)
         self.assertEqual(self.kinds(),['moderation','vision','router','retrieve','answer'])
-        for kind,ttl in [('answer',1800),('retrieve',43200),('vision',86400),('history',86400),('router',43200)]:
+        for kind,ttl in [('answer',1800),('retrieve',7*86400),('vision',86400),('history',86400),('router',7*86400)]:
             keys=self.keys(kind);self.assertEqual(len(keys),1,kind)
             self.assertTrue(ttl-30<=self.sync.ttl(keys[0])<=ttl,(kind,self.sync.ttl(keys[0])))
         self.assertFalse(self.keys('lock'));self.assertFalse(self.keys('inflight'))
