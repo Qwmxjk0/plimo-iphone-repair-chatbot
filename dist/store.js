@@ -1,3 +1,5 @@
+// Real photos (Unsplash License, see credits.html) matched to each service by name.
+const PHOTOS=[[/หน้าจอ/,'screen','iPhone หน้าจอแตก'],[/แบตเตอรี่/,'battery','iPhone ที่แกะเครื่องเห็นแบตเตอรี่'],[/ช่องชาร์จ/,'port','สายชาร์จเสียบช่องชาร์จ iPhone'],[/ลำโพง/,'speaker','ขอบล่าง iPhone ที่มีลำโพงและช่องชาร์จ'],[/กล้อง/,'camera','กล้องหลัง iPhone ระยะใกล้'],[/ฟิล์ม/,'film','iPhone หน้าจอสะอาดสำหรับติดฟิล์ม'],[/เคส/,'case','เคส iPhone หลายแบบ'],[/Lightning/,'lightning','หัวสาย Lightning'],[/USB-C/,'usbc','หัวสาย USB-C']];
 let catalog = [];
 let filter = 'all';
 function render() {
@@ -7,11 +9,9 @@ function render() {
   for (const item of selected) {
     const card = document.createElement('article'); card.className='catalog-card';
     const art = document.createElement('div'); art.className='catalog-art';
-    const number=document.createElement('span');number.className='slot-number';number.textContent='PLIMO / '+item.id.slice(5).padStart(2,'0');
-    const illustration=document.createElement('img');illustration.className='catalog-illustration';illustration.loading='lazy';illustration.decoding='async';illustration.width=1448;illustration.height=1086;
-    const asset=item.kind==='product'?'accessories':Number(item.id.slice(5))%2?'repair':'phone';
-    illustration.src='assets/'+asset+'.webp';illustration.alt=item.kind==='product'?'ภาพการ์ตูนโทรศัพท์และอุปกรณ์ประกอบ':'ภาพการ์ตูนโทรศัพท์และเครื่องมือซ่อม';
-    const label=document.createElement('span');label.className='art-placeholder-label';label.textContent='ภาพประกอบ';art.append(illustration,number,label);
+    const photo=document.createElement('img');photo.className='catalog-illustration';photo.loading='lazy';photo.decoding='async';photo.width=960;photo.height=720;
+    const [file,alt]=PHOTOS.find(([key])=>key.test(item.name))?.slice(1)||['repair','ช่างกำลังซ่อม iPhone'];
+    photo.src='assets/photos/'+file+'.webp';photo.alt=alt;art.append(photo);
     const body=document.createElement('div'); body.className='catalog-body';
     const available=item.confirmed||item.demo;
     const badge=document.createElement('span'); badge.className='pending-badge'; badge.textContent=item.price_status==='estimate'?'ราคาประเมินเบื้องต้น':item.demo?'ราคาสาธิต':item.confirmed?'ข้อมูลร้านยืนยัน':'รอข้อมูลจริง';
