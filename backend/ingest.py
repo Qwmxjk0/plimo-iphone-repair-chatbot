@@ -3,6 +3,8 @@ import asyncio
 import hashlib
 import json
 import os
+import sys
+import time
 from pathlib import Path
 import httpx
 
@@ -55,36 +57,84 @@ def markdown_sections(text, name):
     bodies = [(title + '\n' + '\n'.join(p)).strip() for p in parts if '\n'.join(p).strip()]
     return bodies, [f'{stem}-{i + 1}.md' for i in range(len(bodies))]
 
-async def main():
+BUSY = ('pending', 'parsing', 'analyzing', 'processing', 'preprocessed')
+
+def plan(counts):
+    """What a deploy should do for the knowledge base, from LightRAG's status counts.
+    'submit' sends every document (already-indexed ones are skipped for free), 'retry'
+    reprocesses failed ones, 'wait' lets running work finish. Nothing here calls OpenAI."""
+    if any(counts.get(k, 0) for k in BUSY):
+        return 'wait'
+    if counts.get('failed', 0):
+        return 'retry'
+    return 'submit'
+
+def documents():
     texts, sources = [], []
     for path in sorted(Path('/app/knowledge').glob('*.md')):
         section_texts, section_sources = markdown_sections(path.read_text(), path.name)
         texts.extend(section_texts); sources.extend(section_sources)
     catalog = json.loads(Path('/app/catalog.json').read_text())
-    catalog_texts, catalog_sources = catalog_documents(catalog, include_demo='--include-demo' in __import__('sys').argv)
+    catalog_texts, catalog_sources = catalog_documents(catalog, include_demo='--include-demo' in sys.argv)
     texts.extend(catalog_texts)
     sources.extend(catalog_sources)
+    # Content hash in the name: a changed section is a new document; changed knowledge still needs a NEW RAG volume to drop old text.
+    return texts, [hashlib.sha256(text.encode()).hexdigest()[:12] + '-' + source for text, source in zip(texts, sources)]
+
+async def submit(client, base, headers, texts, sources):
+    url = base + '/documents/texts'
+    response = await client.post(url, headers=headers, json={'texts': texts, 'file_sources': sources})
+    if response.status_code != 409:
+        response.raise_for_status()
+        return len(texts)
+    # Some documents are already indexed: send one by one, duplicates are refused without any model call.
+    added = 0
+    for text, source in zip(texts, sources):
+        one = await client.post(url, headers=headers, json={'texts': [text], 'file_sources': [source]})
+        if one.status_code != 409:
+            one.raise_for_status(); added += 1
+    return added
+
+async def counts(client, base, headers):
+    r = await client.get(base + '/documents/status_counts', headers=headers)
+    r.raise_for_status()
+    return r.json()['status_counts']
+
+async def main():
     key = os.environ.get('LIGHTRAG_API_KEY')
     if not key or not os.environ.get('OPENAI_API_KEY'):
         raise SystemExit('Set OPENAI_API_KEY and LIGHTRAG_API_KEY in .env first')
-    # Use a NEW RAG workspace for changed knowledge to avoid obsolete policies.
-    sources = [hashlib.sha256(text.encode()).hexdigest()[:12] + '-' + source for text, source in zip(texts,sources)]
-    url = os.getenv('LIGHTRAG_URL','http://lightrag:9621')+'/documents/texts'
+    base, headers = os.getenv('LIGHTRAG_URL', 'http://lightrag:9621'), {'X-API-Key': key}
+    ensure = '--ensure' in sys.argv
+    texts, sources = documents()
     async with httpx.AsyncClient(timeout=120) as client:
-        response = await client.post(url, headers={'X-API-Key':key}, json={'texts':texts,'file_sources':sources})
-        if response.status_code == 409:
-            # Some documents are already indexed (adding a new knowledge file): send one by one, skip duplicates.
-            added = 0
-            for text, source in zip(texts, sources):
-                one = await client.post(url, headers={'X-API-Key':key}, json={'texts':[text],'file_sources':[source]})
-                if one.status_code != 409:
-                    one.raise_for_status(); added += 1
-            print(json.dumps({'status':'partial','added':added,'already_indexed':len(texts)-added},ensure_ascii=False))
-        else:
-            response.raise_for_status()
-            result=response.json()
-            print(json.dumps({'status':result.get('status'),'track_id':result.get('track_id'),'document_count':len(texts)},ensure_ascii=False))
-        print('Submission is asynchronous. Check LightRAG document status before testing chat.')
+        action, added = (plan(await counts(client, base, headers)) if ensure else 'submit'), 0
+        if action == 'retry':
+            (await client.post(base + '/documents/reprocess_failed', headers=headers)).raise_for_status()
+            print('Retrying documents that failed before (for example while OpenAI credit was empty).')
+        elif action == 'submit':
+            added = await submit(client, base, headers, texts, sources)
+            print(json.dumps({'documents': len(texts), 'added': added, 'already_indexed': len(texts) - added}, ensure_ascii=False))
+        if not ensure:
+            print('Submission is asynchronous. Check LightRAG document status before testing chat.')
+            return
+        # --ensure: wait until LightRAG has finished, and fail loudly if anything did not index.
+        # LightRAG starts work in the background: right after a submit or retry the counts may not move yet,
+        # so "idle" only counts once work was seen or after a grace period.
+        started, queued = time.monotonic(), action == 'retry' or added > 0
+        deadline = started + int(os.getenv('INGEST_WAIT_SECONDS', '1500'))
+        seen = False
+        while True:
+            c = await counts(client, base, headers)
+            busy = sum(c.get(k, 0) for k in BUSY)
+            seen = seen or busy > 0
+            if (not busy and (seen or not queued or time.monotonic() - started > 45)) or time.monotonic() > deadline:
+                break
+            print(f"  indexing: {c.get('processed', 0)}/{c.get('all', 0)} done", flush=True)
+            await asyncio.sleep(15)
+        print(json.dumps({'processed': c.get('processed', 0), 'failed': c.get('failed', 0), 'all': c.get('all', 0)}))
+        if busy or c.get('failed', 0) or c.get('processed', 0) < len(texts):
+            raise SystemExit('Knowledge base is NOT complete (check OpenAI credit, then deploy again: failed documents are retried).')
 
 if __name__=='__main__':
     asyncio.run(main())

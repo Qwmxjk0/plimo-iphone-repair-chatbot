@@ -1,5 +1,5 @@
 import unittest
-from ingest import catalog_documents
+from ingest import catalog_documents, plan
 
 class IngestTests(unittest.TestCase):
     def test_demo_only_with_explicit_option_and_label(self):
@@ -35,5 +35,12 @@ class IngestTests(unittest.TestCase):
         texts,sources=markdown_sections('# ร้าน\nเวลาเปิด 10:00\n## ราคา\nราคาเบื้องต้น\n## ชำระเงิน\nปุ่มในบัญชี','shop.md')
         self.assertEqual(sources,['shop-1.md','shop-2.md','shop-3.md'])
         self.assertTrue(all(t.startswith('# ร้าน') for t in texts)); self.assertIn('ปุ่มในบัญชี',texts[2])
+
+class EnsurePlanTests(unittest.TestCase):
+    def test_deploy_retries_failed_waits_for_busy_and_resubmits_otherwise(self):
+        self.assertEqual(plan({'processed': 0, 'failed': 53, 'all': 53}), 'retry')
+        self.assertEqual(plan({'processed': 20, 'processing': 3, 'failed': 1, 'all': 24}), 'wait')
+        self.assertEqual(plan({'processed': 53, 'failed': 0, 'all': 53}), 'submit')
+        self.assertEqual(plan({'all': 0}), 'submit')
 
 if __name__=='__main__':unittest.main()

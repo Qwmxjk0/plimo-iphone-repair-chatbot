@@ -70,10 +70,11 @@ for i in $(seq 1 60); do
 done
 
 log "5/7 Knowledge base"
-KB="$(grep '^KB_VERSION=' .env | cut -d= -f2)"
-if [ ! -f "deploy/.ingested-$KB" ]; then
-  $COMPOSE exec -T api python ingest.py && touch "deploy/.ingested-$KB"
-  echo "Indexing runs in the background for a few minutes."
+# Every deploy checks the knowledge base: complete -> nothing to do (no OpenAI cost),
+# failed documents -> retried, new volume -> indexed. Waits until LightRAG is done.
+if ! $COMPOSE exec -T api python ingest.py --ensure; then
+  echo "WARNING: knowledge base is not complete. Chat answers will lack shop documents until it is."
+  echo "         Fix the cause (usually OpenAI credit) and run deploy again."
 fi
 
 log "6/7 Demo data for reviewers (demo_admin is locked on public servers)"

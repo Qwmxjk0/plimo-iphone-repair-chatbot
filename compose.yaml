@@ -94,6 +94,8 @@ services:
       EMBEDDING_DIM: 1536
       SUMMARY_LANGUAGE: Thai
       ENABLE_LLM_CACHE: "true"
+      # Answers use naive (vector) retrieval only, so skip the second extraction pass: about half the indexing cost.
+      MAX_GLEANING: "0"
       WORKING_DIR: /app/data/rag_storage
       INPUT_DIR: /app/data/inputs
       RERANK_BINDING: "null"
