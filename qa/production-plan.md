@@ -111,7 +111,7 @@ flowchart LR
 - วาง instructions คงที่ไว้หน้า prompt ให้ได้ OpenAI prompt caching
 - HTTP client ตัวเดียวแบบ keep-alive สำหรับ OpenAI, LightRAG และ Stripe
 - คำถามแรกที่ไม่มีบริบท: เริ่ม retrieval คู่ขนานกับ router
-- เพดาน token รายวันทั้งระบบ + quota ต่อสมาชิก/IP; เมื่อถึงเพดาน ยังตอบจาก cache และ DB ได้
+- เพดานค่าใช้จ่ายรายวัน (USD)ทั้งระบบ + quota ต่อสมาชิก/IP; เมื่อถึงเพดาน ยังตอบจาก cache และ DB ได้
 - ภาพหน้าเว็บแปลงเป็น WebP, gzip และ cache header สำหรับไฟล์ static
 - เทียบ `RAG_MODE=mix` กับ `naive` ด้วยชุด eval เดียวกัน เลือกจากความถูกต้องก่อน แล้วค่อยดูความเร็ว
 
@@ -153,7 +153,7 @@ flowchart LR
 | LLM03 Excessive Agency | LLM ไม่มี tool ที่แก้ข้อมูล; การอนุมัติ/ยกเลิก/ชำระผ่าน API ที่ตรวจสิทธิ์เท่านั้น | C16, C17, S18 |
 | LLM04 Supply Chain | pin LightRAG, model ตั้งผ่าน env, ตรวจ dependency | W05 |
 | LLM05 Data and Model Poisoning | ความรู้มาจาก `knowledge/` และ `catalog.json` ใน repo เท่านั้น; แชทแก้คลังไม่ได้ | S04 |
-| LLM06 Unbounded Consumption | rate limit, quota, เพดาน token รายวัน, จำกัดขนาด input/ภาพ/output, single-flight | K04, K05, S14 |
+| LLM06 Unbounded Consumption | rate limit, quota, เพดานค่าใช้จ่ายรายวัน (USD), จำกัดขนาด input/ภาพ/output, single-flight | K04, K05, S14 |
 | LLM07 Misinformation | ราคาจาก catalog + validator, ห้ามแต่งข้อมูลที่ไม่มี, ถามกลับเมื่อกำกวม | P*, A*, S20 |
 | LLM08 Hidden Context Exposure | ไม่เปิดเผย instructions/บริบทที่ค้นได้แบบดิบ, ตรวจคำตอบที่ซ้ำกับ instructions | S03, S11 |
 | LLM09 Vector and Embedding Weaknesses | คลัง RAG แยก workspace ตามเวอร์ชัน, ingest เฉพาะเอกสารที่อนุมัติ, retrieval เป็นข้อมูลไม่ใช่คำสั่ง | S04, S11 |
@@ -219,17 +219,18 @@ flowchart LR
 4. หลังขึ้น VPS: สร้าง webhook ใน Stripe dashboard ตาม URL ที่ระบบแสดง แล้วใส่ `STRIPE_WEBHOOK_SECRET`
 5. ข้อมูลร้านที่ยังขาด: ที่อยู่ เบอร์ เงื่อนไขรับประกัน ระยะเวลาซ่อม (ถ้าต้องการให้บอทตอบได้)
 
-## 9. สถานะงาน
+## 9. สถานะงาน (อัปเดต 15 ตุลาคม 2026)
 
-| งาน | สถานะ |
-|---|---|
-| Baseline commit + unit tests เดิมผ่าน | เสร็จ |
-| เอกสารแผนนี้ | เสร็จ |
-| Router, ติดตามเคส, guardrails | กำลังทำ |
-| Cache, ราคา catalog, cost control | รอ |
-| Stripe โหมดทดสอบ | รอ (ต้องมี `sk_test`) |
-| OWASP hardening | รอ |
-| Eval suite + ผลทดสอบจริง | รอ |
-| VPS kit + deploy | รอ (ต้องมี VPS) |
-| Security + load test | รอ |
-| README/เอกสารสำหรับผู้ตรวจ | รอ |
+| งาน | สถานะ | หลักฐาน |
+|---|---|---|
+| Baseline commit + unit tests เดิมผ่าน | เสร็จ | commit `cf44d7b` |
+| Router, ติดตามเคส, guardrails (B01–B04, B09, B10) | เสร็จ | `nlu.py`, `router.py`, eval หมวด C/S |
+| Cache, ราคา catalog, cost control (B06, B07, B08, B11, B12, B16) | เสร็จ | `catalog.py`, `main.py`, eval หมวด P, รายงาน cache |
+| Prompt caching + few-shot router | เสร็จ | cached tokens ใน `qa/results/eval-latest.md` |
+| Stripe โหมดทดสอบ | เสร็จในโค้ด + test (mock) | `payments.py`, `test_payments.py`; ทดสอบกับ Stripe จริงรอ `sk_test` |
+| OWASP hardening (B05, B14, B15, B17) | เสร็จ | `nginx.conf`, `compose*.yaml`, `qa/results/security-latest.md` |
+| Eval suite + ผลทดสอบจริง | เสร็จ | `qa/results/eval-latest.md` |
+| ภาพหน้าเว็บ (B13) | เสร็จ | WebP 76 KB รวม |
+| VPS kit | เสร็จ (ตรวจ config แล้ว) | `deploy/`; deploy จริงรอ VPS |
+| Security + load test | เสร็จ | `qa/results/security-latest.md`, `qa/results/load-latest.md` |
+| README/เอกสารสำหรับผู้ตรวจ | เสร็จ | `README.md`, `qa/README.md`, `qa/guardrails.md` |

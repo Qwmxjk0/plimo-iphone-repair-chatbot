@@ -242,7 +242,7 @@ class FlowTests(ChatSetup, unittest.TestCase):
         self.assertIn('3,900', r['answer'])
     def test_budget_exhausted_keeps_cached_answers_and_blocks_new_calls(self):
         self.ask('ร้านเปิดกี่โมง')
-        main.cache.hashes['metrics:' + main.day()]['tokens_total'] = 10**9
+        main.cache.hashes['metrics:' + main.day()]['cost_micro_usd'] = int(main.DAILY_BUDGET_USD * 1_000_000)
         cached = self.ask('ร้านเปิดกี่โมง', TestClient(main.app))
         self.assertTrue(cached['cache']['fast'])
         r = TestClient(main.app).post('/api/chat', data={'text': 'ตรวจเช็คเสียเงินไหม'})
@@ -253,6 +253,8 @@ class FlowTests(ChatSetup, unittest.TestCase):
         self.assertEqual(metrics['llm_calls'], 2)
         self.assertEqual(metrics['tokens_total'], 50 + 20 + 100 + 40)
         self.assertEqual(metrics['tokens_cached'], 64)
+        # router 50 in + 20 out; answer 36 uncached + 64 cached in + 40 out, at USD per 1M tokens
+        self.assertEqual(metrics['cost_micro_usd'], round(50 * 0.75 + 20 * 4.5) + round(36 * 0.75 + 64 * 0.075 + 40 * 4.5))
     def test_single_flight_runs_compute_once(self):
         runs = []
         async def compute():

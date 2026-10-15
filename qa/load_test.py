@@ -14,6 +14,13 @@ from redis.asyncio import Redis
 
 BASE = os.getenv('LOAD_BASE', 'http://127.0.0.1:8000')
 FAQ = ['ร้านเปิดกี่โมง', 'เปลี่ยนจอ iPhone 13 ราคาเท่าไหร่', 'แบต iPhone 12 เท่าไหร่', 'ตรวจเช็คเสียเงินไหมครับ', 'สาย Lightning ใช้กับ iPhone 15 ได้ไหม']
+# Never asked by the eval suite: measures the full uncached path (router, retrieval, generation).
+FRESH = ['เปลี่ยนลำโพง iPhone 15 Pro ราคาเท่าไหร่', 'ฟิล์มกระจก iPhone 11 ราคาเท่าไร', 'กล้องหลัง iPhone 12 เบลอ เปลี่ยนกี่บาท',
+         'ช่องชาร์จ iPhone 14 สกปรก ทำความสะอาดเท่าไหร่', 'สาย USB-C ใช้กับ iPhone 16 Pro Max ได้ไหม', 'เคสใส iPhone 17 Pro มีไหม ราคาเท่าไหร่',
+         'เปลี่ยนแบต iPhone 11 กี่บาท', 'หน้าจอ iPhone 15 Plus เปลี่ยนเท่าไหร่', 'ร้านเปิดวันเสาร์ไหม', 'ตรวจเช็คเครื่องต้องจองก่อนไหม',
+         'iPhone 13 mini เปลี่ยนแบตได้ไหม', 'เปลี่ยนจอ iPhone 12 กับแบต iPhone 12 รวมกันเท่าไหร่', 'ลำโพงเสียงแตก iPhone 16 ซ่อมเท่าไหร่',
+         'ซ่อมไอโฟน 7 ได้ไหม', 'มีบริการรับส่งเครื่องถึงบ้านไหม', 'จอ iPhone 17 Pro Max เปลี่ยนราคาเท่าไหร่', 'สายชาร์จ Lightning มีขายไหม ราคาเท่าไหร่',
+         'แบตบวม iPhone 14 อันตรายไหม ควรทำยังไง', 'กล้องหน้าเสีย iPhone 13 ซ่อมได้ไหม', 'ร้านรับซ่อมเครื่องที่ไม่ได้ซื้อในไทยไหม']
 WORKERS, PER_WORKER = 20, 12
 TH = timezone(timedelta(hours=7))
 
@@ -44,6 +51,14 @@ async def burst(text, n):
 
 async def main():
     redis = Redis.from_url(os.getenv('REDIS_URL', 'redis://redis:6379/0'), decode_responses=True)
+    fresh = []
+    async with httpx.AsyncClient(timeout=120) as client:
+        for q in FRESH:
+            client.cookies.clear()
+            body = (await client.post(BASE + '/api/chat', data={'text': q})).json()
+            if not body.get('cache', {}).get('answer') and body.get('route') not in ('case', 'payment', 'unsafe', 'out_of_scope', 'greeting'):
+                fresh.append(body['timings'])
+    stage = lambda k: [t[k] for t in fresh if k in t]
     async with httpx.AsyncClient(timeout=120) as client:
         for q in FAQ:  # warm the shared cache
             client.cookies.clear(); await client.post(BASE + '/api/chat', data={'text': q})
@@ -64,6 +79,9 @@ async def main():
     rmiss = after.get('retrieval_miss', 0) - before.get('retrieval_miss', 0)
     answers = {a for _, _, a in burst_results}
     lines = [f'# Load test — {datetime.now(TH):%Y-%m-%d %H:%M} (เวลาไทย)', '', f'เป้าหมาย: `{BASE}` (API ตรง ไม่ผ่าน nginx)', '',
+             '## 0. คำถามใหม่ที่ไม่เคยถาม (ไม่ hit cache) — ทีละคำขอ', '',
+             f'- {len(fresh)} คำถาม: backend total p50 {pct(stage("total_ms"), .5)} ms, p95 {pct(stage("total_ms"), .95)} ms',
+             f'- แยกขั้น p50: router {pct(stage("router_ms"), .5)} ms · retrieval {pct(stage("retrieval_ms"), .5)} ms (คำถามแรกค้นคู่ขนานกับ router) · generation {pct(stage("generation_ms"), .5)} ms', '',
              '## 1. คำถามยอดฮิตที่อยู่ใน cache', '',
              f'- {len(results)} คำขอ, พร้อมกัน {WORKERS} ผู้ใช้, ทุกคำขอเป็น session ใหม่, ใช้เวลารวม {wall:.1f} วินาที ({len(results) / wall:.1f} คำขอ/วินาที)',
              f'- สำเร็จ {len(ok)}/{len(results)} · hit cache {hits}/{len(ok)} · error {errors or "ไม่มี"}',

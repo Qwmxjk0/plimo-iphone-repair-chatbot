@@ -157,3 +157,9 @@ TIME_WORDS = re.compile(r'วันนี้|พรุ่งนี้|มะร�
 
 def time_sensitive(text):
     return bool(TIME_WORDS.search(clean(text)))
+
+CONTACT = re.compile(r'(?<!\d)0[2-9]\d?[- ]?\d{3}[- ]?\d{3,4}(?!\d)|[\w.+-]+@[\w-]+\.[\w.]+|line\s*id|ไลน์', re.I)
+
+def has_contact(text):
+    """Phone numbers, emails or LINE IDs: keep such raw text away from shared stores."""
+    return bool(CONTACT.search(clean(text)))

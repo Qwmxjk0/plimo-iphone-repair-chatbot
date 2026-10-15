@@ -51,8 +51,13 @@ REASONING_EFFORT = os.getenv("OPENAI_REASONING_EFFORT", "")
 VERBOSITY = os.getenv("OPENAI_VERBOSITY", "low")
 ANSWER_MAX_TOKENS = int(os.getenv("ANSWER_MAX_TOKENS", "700"))
 ROUTER_MAX_TOKENS = int(os.getenv("ROUTER_MAX_TOKENS", "400"))
-DAILY_TOKEN_BUDGET = int(os.getenv("DAILY_TOKEN_BUDGET", "2000000"))
-CHAT_IP_PER_HOUR = int(os.getenv("CHAT_IP_PER_HOUR", "400"))
+# Daily spend cap in USD from real token prices (USD per 1M tokens; gpt-5.4-mini, Oct 2026).
+DAILY_BUDGET_USD = float(os.getenv("DAILY_BUDGET_USD", "5"))
+DAILY_TOKEN_BUDGET = int(os.getenv("DAILY_TOKEN_BUDGET", "0"))
+PRICE_INPUT = float(os.getenv("OPENAI_PRICE_INPUT", "0.75"))
+PRICE_CACHED = float(os.getenv("OPENAI_PRICE_CACHED_INPUT", "0.075"))
+PRICE_OUTPUT = float(os.getenv("OPENAI_PRICE_OUTPUT", "4.50"))
+CHAT_IP_PER_HOUR = int(os.getenv("CHAT_IP_PER_HOUR", "1200"))
 CHAT_SESSION_PER_HOUR = int(os.getenv("CHAT_SESSION_PER_HOUR", "60"))
 CHAT_MEMBER_PER_HOUR = int(os.getenv("CHAT_MEMBER_PER_HOUR", "120"))
 RAG_URL = os.getenv("LIGHTRAG_URL", "http://lightrag:9621")
@@ -191,7 +196,10 @@ async def count(**fields):
         logger.warning("metrics_unavailable type=%s", type(exc).__name__)
 
 async def check_budget():
-    if DAILY_TOKEN_BUDGET > 0 and int(await cache.hget("metrics:" + day(), "tokens_total") or 0) >= DAILY_TOKEN_BUDGET:
+    key = "metrics:" + day()
+    over_usd = DAILY_BUDGET_USD > 0 and int(await cache.hget(key, "cost_micro_usd") or 0) >= DAILY_BUDGET_USD * 1_000_000
+    over_tokens = DAILY_TOKEN_BUDGET > 0 and int(await cache.hget(key, "tokens_total") or 0) >= DAILY_TOKEN_BUDGET
+    if over_usd or over_tokens:
         await count(budget_block=1)
         raise HTTPException(503, BUDGET_MSG)
 
@@ -213,8 +221,9 @@ async def llm(instructions, content, *, model, max_tokens, schema=None, cache_ke
     payload = result.json()
     usage = payload.get("usage") or {}
     tokens_in, tokens_out = usage.get("input_tokens", 0), usage.get("output_tokens", 0)
-    await count(llm_calls=1, tokens_in=tokens_in, tokens_out=tokens_out, tokens_total=tokens_in + tokens_out,
-                tokens_cached=(usage.get("input_tokens_details") or {}).get("cached_tokens", 0))
+    cached = (usage.get("input_tokens_details") or {}).get("cached_tokens", 0)
+    cost = (tokens_in - cached) * PRICE_INPUT + cached * PRICE_CACHED + tokens_out * PRICE_OUTPUT  # micro-USD
+    await count(llm_calls=1, tokens_in=tokens_in, tokens_out=tokens_out, tokens_total=tokens_in + tokens_out, tokens_cached=cached, cost_micro_usd=round(cost))
     text = "\n".join(c.get("text", "") for item in payload.get("output", []) for c in item.get("content", []) if c.get("type") == "output_text").strip()
     if not text:
         raise HTTPException(502, "ผู้ช่วยยังสร้างคำตอบไม่ได้ กรุณาลองใหม่")
@@ -411,8 +420,9 @@ async def respond(safe_text, flags, uploads, history, session, member, hits, tim
             hits["fast"] = hits["answer"] = True
             await count(fast_hit=1)
             return found
-    # First turn: the message is already standalone, so retrieval can run while the router decides.
-    spec = asyncio.create_task(retrieve(RETRIEVE_PREFIX + safe_text)) if first_turn and not nlu.is_case_question(safe_text) else None
+    # First turn: the message is already standalone, so retrieval can run while the router decides
+    # (not when it carries contact details: the router's cleaned question is used for retrieval instead).
+    spec = asyncio.create_task(retrieve(RETRIEVE_PREFIX + safe_text)) if first_turn and not nlu.is_case_question(safe_text) and not nlu.has_contact(safe_text) else None
     if spec is not None:
         spec.add_done_callback(lambda t: t.cancelled() or t.exception())
     try:
@@ -535,7 +545,7 @@ async def admin_metrics(request: Request):
     data = {}
     for d in days:
         data[d] = {k: int(v) for k, v in (await cache.hgetall("metrics:" + d)).items()}
-    return {"days": data, "daily_token_budget": DAILY_TOKEN_BUDGET}
+    return {"days": data, "daily_budget_usd": DAILY_BUDGET_USD, "daily_token_budget": DAILY_TOKEN_BUDGET}
 
 @app.get('/api/ready')
 async def readiness():

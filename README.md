@@ -2,13 +2,13 @@
 
 เว็บร้านซ่อม iPhone หน้าเดียวพร้อมผู้ช่วยแชทภาษาไทย ตอบจากข้อมูลร้านจริง (LightRAG + OpenAI) รองรับข้อความและภาพ มีระบบสมาชิก ประวัติแชท เคสซ่อม การอนุมัติใบเสนอราคา และ**การชำระเงินผ่าน Stripe (โหมดทดสอบ)** พร้อมหน้า Admin
 
-<!-- RESULTS -->
+> **ผลตรวจล่าสุด (15 ต.ค. 2026, Docker local + OpenAI/LightRAG จริง):** eval คุณภาพคำตอบ **113/113** · unit/contract **75/75** · security OWASP Top 10:2025 **49/49** · โหลด 20 ผู้ใช้พร้อมกัน p95 **90 ms** (cache) · ค่า AI ต่อคำตอบใหม่ ≈ **$0.0028** — รายละเอียดใน [qa/results/](qa/results/)
 
 ## เปิดใช้งาน
 
 | ที่ไหน | URL | หมายเหตุ |
 |---|---|---|
-| VPS (HTTPS) | <!-- VPS_URL --> | ติดตั้งด้วย `deploy/install.sh` |
+| VPS (HTTPS) | รอ deploy (ต้องมี VPS) | ติดตั้งด้วย `deploy/install.sh` |
 | Docker บนเครื่อง | http://127.0.0.1:8081 | ดูหัวข้อ "ติดตั้งบนเครื่อง" |
 
 บัญชีตัวอย่าง: `demo_user` / `PlimoMemberDemo2026!` (สมาชิก มีประวัติแชทและเคสตัวอย่าง) ส่วน Admin บน Docker เครื่องใช้ `demo_admin` / `PlimoAdminDemo2026!` ได้ แต่บน VPS บัญชีนี้ถูกล็อกเพราะรหัสอยู่ใน repo ให้ใช้ `ADMIN_USERNAME` / `ADMIN_PASSWORD` ใน `.env` ของเซิร์ฟเวอร์ (ส่งให้ผู้ตรวจแยกต่างหาก)
@@ -40,7 +40,7 @@
 | F17 | Guardrails + OWASP | input guard, router, output validator ดู [qa/guardrails.md](qa/guardrails.md) |
 | F18 | Router คำถาม | แยกราคา/ข้อมูลร้าน/เคส/การชำระ/กำกวม/นอกขอบเขต/ไม่ปลอดภัย, เขียนคำถามต่อเนื่องเป็นฉบับเต็ม |
 | F19 | ชำระเงิน Stripe Checkout (โหมดทดสอบ) | จ่ายได้เฉพาะใบเสนอที่อนุมัติ, ยืนยันกับ Stripe ฝั่ง server + webhook ลงลายเซ็น |
-| F20 | ควบคุมค่าใช้จ่าย | เพดาน token รายวัน, quota ต่อสมาชิก/session/IP, นับ token จริงทุก call |
+| F20 | ควบคุมค่าใช้จ่าย | เพดานค่าใช้จ่ายรายวัน (USD), quota ต่อสมาชิก/session/IP, นับ token จริงทุก call |
 | F21 | ติดตั้ง VPS คำสั่งเดียว | HTTPS อัตโนมัติ, firewall, backup รายวัน, healthcheck, log rotation |
 
 ## ติดตั้งบน VPS (Ubuntu 22.04/24.04)
@@ -100,7 +100,28 @@ docker compose exec api python seed_demo.py
 
 วิธีรันทุกชั้นอยู่ใน [qa/README.md](qa/README.md) แผนและเกณฑ์ตรวจรับอยู่ใน [qa/production-plan.md](qa/production-plan.md)
 
-<!-- TESTS -->
+| ชั้น | ผลล่าสุด | รายงาน |
+|---|---|---|
+| Unit / contract (mock OpenAI/LightRAG/Stripe, Redis จริง) | 75/75 ผ่าน | [unit-latest.md](qa/results/unit-latest.md) |
+| Eval คุณภาพคำตอบกับ OpenAI + LightRAG จริง | **113/113** — ราคา 30/30, ติดตามเคส 19/19, safety/OWASP LLM 20/20, กำกวม 16/16, ข้อมูลร้าน 14/14, หลายเทิร์น 8/8, ภาพ 5/5, ชำระเงิน 1/1 | [eval-latest.md](qa/results/eval-latest.md) |
+| Security OWASP Top 10:2025 (A01–A10) | 49/49 ผ่าน | [security-latest.md](qa/results/security-latest.md) |
+| Load / performance | ดูหัวข้อถัดไป | [load-latest.md](qa/results/load-latest.md) |
+
+ประวัติการรันวันนี้ (เก็บไฟล์ไว้ทุกรอบ): รอบแรก 111/113 พบ A14 (ขอส่วนลดถูกจัดเป็นคำสั่งไม่ปลอดภัย) และ M03 (รวมราคาข้ามเทิร์นหาย) → แก้ router; รอบถัดมาพบ A05 (คำถามที่สองในข้อความเดียวหาย) → แก้ router และ F11 ตัวตรวจนับ "ไม่รับซ่อม Samsung" เป็นคำตอบผิด → เปลี่ยนเป็นตัวตรวจที่เข้าใจคำปฏิเสธ; รอบ 08:28 ถูก rate limit ต่อ IP ของระบบเองตัดหลังกรณีที่ 75 จึงปรับค่าเริ่มต้นเป็น 1,200 ข้อความ/ชม./IP สำหรับห้องเรียนที่ใช้ NAT เดียวกัน แล้วรันใหม่ทั้งชุด
+
+## Performance และต้นทุน (วัดจริง)
+
+| ตัวชี้วัด | ผล |
+|---|---|
+| คำถามใหม่ที่ไม่เคยถาม (20 คำถาม) | p50 3.3 วินาที, p95 3.7 วินาที (router 1.3 · ค้นข้อมูล 0.4 คู่ขนาน · สร้างคำตอบ 1.5) |
+| คำถามที่อยู่ใน cache | backend p50 2 ms; ผ่าน HTTP 20 ผู้ใช้พร้อมกัน p50 37 ms, p95 90 ms, 414 คำขอ/วินาที, error 0 |
+| Cache hit | คำถามซ้ำ: ทุกข้อที่ cache ได้ (91% ของทั้งหมด ส่วนที่เหลือคือเคส/การชำระ/guard ที่ตั้งใจไม่ cache); ต่างสำนวน 8/8 |
+| Single-flight | คำถามใหม่เดียวกัน 20 คำขอพร้อมกัน → เรียก OpenAI 2 ครั้ง (แทน ~40), LightRAG 1 ครั้ง |
+| ค่า AI | ≈ $0.0028 (≈ 0.10 บาท) ต่อคำตอบใหม่ (router + คำตอบ), input 67–79% มาจาก prompt cache; คำตอบจาก cache ไม่เสียเงิน; มีเพดานค่าใช้จ่ายรายวัน (USD) |
+| หน้าเว็บ | น้ำหนักหน้าแรก ~4.5 MB → ~97 KB (WebP + lazy loading) |
+| RAM ทั้ง stack | ~420 MiB (แนะนำ VPS 2 vCPU / 4 GB) |
+
+รายละเอียดและสมมติฐานต้นทุนรายเดือนอยู่ใน [qa/cost-performance.md](qa/cost-performance.md)
 
 ## นโยบายคำตอบและราคา
 

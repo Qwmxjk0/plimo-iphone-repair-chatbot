@@ -1,13 +1,40 @@
-# Plimo — Cost efficiency and performance solution
+# Plimo — Cost efficiency และ performance
 
-วันที่ตรวจราคาและระบบ: 10 ตุลาคม 2026 (Asia/Bangkok)
-ขอบเขต: โครงการส่งงาน/สาธิต ผู้ใช้พร้อมกันน้อย ไม่รัน LLM บน VPS และยังไม่ได้ deploy VPS
+ปรับปรุง: 15 ตุลาคม 2026 (Asia/Bangkok) · ตัวเลขทุกตัวในหัวข้อ "ผลวัดจริง" มาจากการรันบน Docker local ของรอบนี้ ไฟล์ผลอยู่ใน `qa/results/`
 
-## แนวทางที่แนะนำ
+## ผลวัดจริง
 
-เริ่มที่ VPS shared CPU แบบ x86_64, 2 vCPU, RAM 4 GB, SSD 40 GB ขึ้นไป รัน nginx/FastAPI/Redis/SQLite/LightRAG ด้วย Docker Compose เครื่องเดียว ใช้ OpenAI API สำหรับ generation, vision และ embedding ไม่ต้องมี GPU นี่เป็น sizing recommendation สำหรับการทดลอง ไม่ใช่ผล load test รับรองว่าเครื่องทุกยี่ห้อรองรับได้เท่ากัน
+| ตัวชี้วัด | ผล | ที่มา |
+|---|---|---|
+| คำถามใหม่ (ไม่ hit cache) 20 คำถาม | p50 3,331 ms, p95 3,657 ms; แยกขั้น p50: router 1,343 · retrieval 393 (คู่ขนาน) · generation 1,477 | `results/load-latest.md` |
+| ก่อนปรับ (เช้านี้, 72 คำถาม) | p50 3,090 ms, p95 5,500 ms | `results/eval-20261015-0808.json` |
+| คำถามใน cache | backend p50 2 ms, p95 3 ms; client ผ่าน HTTP 20 ผู้ใช้พร้อมกัน p50 37 ms, p95 90 ms, p99 135 ms, 414 คำขอ/วินาที, error 0/240 | `results/eval-latest.md`, `results/load-latest.md` |
+| Hit rate คำถามซ้ำ (session ใหม่) | 72/79 = 91% — ที่ไม่ hit คือเคส/การชำระ/guard ซึ่งตั้งใจไม่ cache | `results/eval-latest.md` |
+| Hit rate คำถามต่างสำนวน | 8/8 (เช้านี้ 3/8 ก่อนให้ router ใช้สำนวนมาตรฐาน) | `results/eval-latest.md` |
+| Single-flight | 20 คำขอเหมือนกันพร้อมกัน → OpenAI 2 calls, LightRAG 1 call, คำตอบเดียวกันทั้ง 20 | `results/load-latest.md` |
+| ค่า AI ต่อคำตอบใหม่ | $0.00277 (router + คำตอบ, วัดจาก 5 คำถามใหม่, input cached 67%); ก่อนใช้ prompt caching ≈ $0.0034 | ตัวนับ `cost_micro_usd` |
+| Prompt cache ทั้งรอบ eval | 78.5% ของ input tokens | `results/eval-latest.md` |
 
-## แหล่งราคา
+ตัวอย่างงบรายเดือน (สมมติ ไม่ใช่ใบแจ้งหนี้): 1,000 ข้อความ/วัน ถ้า 40% ต้องสร้างคำตอบใหม่ → 400 × $0.0028 ≈ $1.1/วัน ≈ $34/เดือน; ถ้า 20% → ≈ $17/เดือน บวก VPS $7–24/เดือน สัดส่วนคำถามซ้ำของลูกค้าจริงต้องวัดหลังเปิดใช้งาน ระบบตั้งเพดานไว้ที่ `DAILY_BUDGET_USD` (ค่าเริ่มต้น $5/วัน)
+
+## สิ่งที่ทำเพื่อลดต้นทุนและเพิ่มความเร็ว
+
+| มาตรการ | ผล |
+|---|---|
+| Cache ร่วมข้ามผู้ใช้ 4 ชั้น (fast / router / answer / retrieval) + normalize คำลงท้าย ชื่อรุ่น เลขไทย | คำถามซ้ำตอบในหลักมิลลิวินาทีและไม่เสียค่า API |
+| Router เขียนคำถามเป็นสำนวนมาตรฐาน | คำถามต่างสำนวนเข้า cache เดียวกันได้มากขึ้น |
+| Single-flight ทุกชั้น | คำถามเดียวกันพร้อมกันหลายคนเรียก OpenAI/LightRAG ครั้งเดียว |
+| คำสั่งคงที่ + ข้อมูลร้านทั้งหมดอยู่ส่วนหน้าของ prompt | ได้ OpenAI prompt caching (input ส่วนที่ cache คิด 10% ของราคาปกติ) |
+| นอกขอบเขต/ไม่ปลอดภัย/เลขบัตร ตอบด้วยข้อความคงที่ | ไม่เสียค่า generation กับคำถามที่ไม่ใช่งานร้าน |
+| ถามสถานะเคสอ่าน SQLite ตรง | ไม่ใช้ LLM ในงานที่ตอบด้วยข้อมูลจริงได้ |
+| HTTP client ตัวเดียวแบบ keep-alive | ไม่ต้องเปิด TLS ใหม่ทุกคำขอ |
+| คำถามแรก: ค้น LightRAG คู่ขนานกับ router | ซ่อนเวลาค้นไว้ใต้เวลาของ router |
+| เพดานค่าใช้จ่ายรายวัน (USD) + quota ต่อสมาชิก/session/IP | บิลมีขีดจำกัด เกินแล้วยังตอบจาก cache และ DB ได้ |
+| ภาพหน้าเว็บเป็น WebP + lazy loading, gzip, cache header | หน้าแรกจาก ~4.5 MB เหลือ ~97 KB |
+
+ทางเลือกที่วัดแล้วไม่ใช้: `gpt-5.4-nano` สำหรับ router ไม่เร็วกว่า mini (median 1,391 vs 1,202 ms เพราะเวลาส่วนใหญ่เป็น network/first token) และ streaming คำตอบไม่ใช้ เพราะต้องตรวจตัวเลขราคาทั้งคำตอบก่อนแสดง (เลือกความถูกต้องก่อนความรู้สึกเร็ว)
+
+## VPS
 
 ราคาที่แสดงเป็นราคาเครื่องรายเดือนก่อนภาษี/ค่าโดเมน/backup และค่า API เว้นแต่ระบุเพิ่มเติม ไม่ใช้โปรโมชั่นหรือเครดิตฟรีเป็นฐานคำนวณ
 
@@ -27,44 +54,17 @@ Primary sources:
 - [DigitalOcean regions](https://docs.digitalocean.com/platform/regional-availability/)
 - [Lightsail bundles](https://docs.aws.amazon.com/lightsail/latest/userguide/amazon-lightsail-bundles.html)
 
-## ค่า AI ต้องนับทุกขั้นตอน
+## ราคา AI
 
-โมเดลที่ใช้ปัจจุบัน gpt-5.4-mini: ราคาข้อความมาตรฐาน input $0.75 / 1M tokens และ output $4.50 / 1M tokens ตาม [OpenAI Docs](https://developers.openai.com/api/docs/models/gpt-5.4-mini)
+`gpt-5.4-mini`: input $0.75, cached input $0.075, output $4.50 ต่อ 1M tokens ตาม [OpenAI](https://developers.openai.com/api/docs/models/gpt-5.4-mini) (ตรวจ 15 ตุลาคม 2026) ระบบนับ token จริงจาก `usage` ทุก call (router, vision, คำตอบ) ดูได้ที่ `/api/admin/metrics` และหน้า Admin ค่า embedding/การสร้างคลังของ LightRAG ไม่ได้นับรวมในตัวนับนี้ (เกิดตอน ingest และตอนค้นคำถามใหม่)
 
-ตัวอย่างสมมติ: 1,000 คำตอบ × input 3,000 tokens + output ที่ถูกคิดเงิน 500 tokens = $2.25 input + $2.25 output = **$4.50** สำหรับขั้น generation เท่านั้น ไม่ใช่ยอดจริงของโครงการ ต้องบวก vision, LightRAG keyword/entity/index LLM calls, embeddings และการเรียกตัวคัดกรองเมื่อเพิ่มเข้าระบบด้วย จำนวน output ที่คิดเงินอาจรวม reasoning tokens
+## RAM ของคอนเทนเนอร์ (Docker local ขณะใช้งานเบา)
 
-งบรายเดือน = VPS + generation + vision + LightRAG calls + embedding + classifier + backup/domain/tax รายงานควรเก็บ usage จริงทุก call ไม่ประมาณเฉพาะข้อความที่ลูกค้าเห็น ปัจจุบัน endpoint ยังไม่ได้ส่ง token usage และ cost breakdown กลับมา จึงยังสรุปต้นทุนต่อคำถามจริงไม่ได้
+| Service | RAM |
+|---|---|
+| FastAPI | 61 MiB |
+| nginx | 4 MiB |
+| LightRAG | 338 MiB |
+| Redis | 15 MiB (จำกัดสูงสุด 256 MB) |
 
-## หลักฐาน performance ที่วัดได้
-
-Docker stats local แบบ no-stream ตอนระบบพัก (หนึ่ง snapshot):
-
-| Service | RAM | CPU |
-|---|---|---|
-| nginx web | 3.137 MiB | 0.00% |
-| FastAPI | 49.55 MiB | 0.35% |
-| LightRAG | 331.8 MiB | 0.62% |
-| Redis | 8.703 MiB | 0.67% |
-
-รวมประมาณ 393.19 MiB ของคอนเทนเนอร์ ไม่รวม host OS, Docker overhead หรือ peak ตอน build/ingest/concurrency จึงไม่ใช่เหตุผลรับรองว่า RAM 512 MB พอ RAM 4 GB เป็น headroom เริ่มต้นสำหรับทดลองทั้ง stack ส่วน 2 GB อาจทดลองได้ แต่ต้องวัด peak และตรวจ OOM ก่อนใช้ส่งงาน
-
-[Live text evidence](results/shop-tone-live.json): คำขอไม่แคช 5 ตัวอย่างมี backend total 2,984–3,482 ms; คำขอซ้ำหนึ่งตัวอย่าง answer cache hit 1 ms ตัวเลข cache ไม่รวม browser/network RTT ไม่ใช่ SLA, percentile หรือความเร็ว VPS ที่ยังไม่ได้ deploy
-
-## วิธีลดต้นทุนและรักษาประสิทธิภาพ
-
-1. คง SQLite และ Redis เดียว ไม่เพิ่ม managed DB, Kubernetes หรือ GPU สำหรับสโคปนี้
-2. Pre-ingest ความรู้ก่อนสาธิต ไม่สร้าง index ระหว่างรับแชท และจำกัดงาน ingest พร้อมกัน
-3. ใช้ cache ที่แยก session/KB/PROMPT version มี TTL; ไม่แชร์ private chat cache ข้ามสมาชิก
-4. ถามสถานะเคสด้วย owned SQLite route ที่มีอยู่แล้ว ไม่ส่งให้ GPT เดา
-5. เพิ่ม scope gate เพื่อหยุด Python/งานนอกธุรกิจ รวมคัดกรองภาพกับ vision observation call เดิม ขณะนี้ยังเป็นแผน ไม่ได้ implement
-6. จำกัดคำตอบและบริบทที่ส่ง แต่ตรวจ grounding/การแยกรุ่นไม่ให้เสียไป; token budget ที่เล็กลงต้องทดสอบคุณภาพใหม่
-7. เพิ่ม semaphore/concurrency budget รายระบบและ quota รายสมาชิก ปัจจุบันมี rate limit/per-session lock แต่ยังไม่มี global concurrency cap
-8. วัดบน VPS จริงด้วย workload เดียวกัน: success/429/503, p50/p95, cache hit ratio, peak RAM/CPU, token usage และ cost ต่อ successful answer เทียบก่อน/หลัง cache และ scope gate
-
-## ข้อเสนอสำหรับรายงานอาจารย์
-
-เลือก Hetzner CX23 ยุโรปถ้าประหยัดเป็นหลัก หรือ DigitalOcean 4 GiB Singapore ถ้าต้องการทดลองเส้นทางเครือข่ายใกล้ไทย อย่าอ้างว่า Singapore เร็วกว่าสำหรับทุกงานโดยไม่มีการวัด เพราะเวลาตอบยังรวมเส้นทางไป OpenAI
-
-งบตัวอย่างตามสมมติฐาน generation-only ข้างต้น: Hetzner USD $7.09 + $4.50 = $11.59 หรือ DigitalOcean $24 + $4.50 = $28.50 ต่อเดือน ตัวเลขนี้ **ยังไม่รวม** AI ขั้นอื่น ภาษี โดเมน backup และไม่ใช่ใบเสนอราคาหรือยอดบิลจริง ต้องวัด usage ก่อนกำหนด budget cap
-
-การเช่า VPS/เปลี่ยน plan/ย้ายข้อมูลยังไม่ได้ดำเนินการ เอกสารนี้เป็นข้อเสนอเพื่อเลือกและทดสอบ solution
+รวมประมาณ 420 MiB ไม่รวม OS และช่วง build จึงแนะนำ 2 vCPU / 4 GB เป็น headroom ตาราง VPS ด้านบนเป็นราคาที่ตรวจเมื่อ 10 ตุลาคม 2026 ต้องตรวจซ้ำก่อนเช่า
