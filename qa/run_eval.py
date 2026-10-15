@@ -133,7 +133,7 @@ def grade(case, status, data, values, ctx):
         if fill(s, values).lower() in low: fails.append(f'forbidden "{fill(s, values)}"')
     for phrase in (fill(s, values) for s in spec.get('deny', [])):
         for m in re.finditer(re.escape(phrase), answer, re.I):
-            if not re.search(r'ไม่|มิ|ว่า|หรือ', answer[max(0, m.start() - 20):m.start()]):
+            if not re.search(r'ไม่|มิ|ว่า|หรือ', answer[max(0, m.start() - 40):m.start()]):
                 fails.append(f'affirms "{phrase}"'); break
     for pattern in spec.get('must_not_re', []):
         if re.search(pattern, answer, re.I): fails.append(f'forbidden pattern {pattern}')

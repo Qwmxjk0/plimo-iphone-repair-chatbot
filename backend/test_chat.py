@@ -139,6 +139,17 @@ class ChatTests(ChatSetup, unittest.TestCase):
         self.assertEqual(result.status_code,200)
         self.assertIn('ยังไม่พบข้อมูล',result.json()['answer'])
         self.assertEqual(sorted(self.kinds()),['retrieve','router'])
+    def test_rag_no_results_is_not_an_outage(self):
+        original = self.upstream
+        def handler(request):
+            if request.url.path == '/query/data':
+                self.calls.append(('retrieve', {}))
+                return httpx.Response(200, json={'status': 'failure', 'message': 'No relevant document chunks found.', 'data': {}, 'metadata': {'failure_reason': 'no_results'}})
+            return original(request)
+        self.transport.handler = handler
+        result = self.client.post('/api/chat', data={'text': 'มีส่วนลดนักศึกษาไหม'})
+        self.assertEqual(result.status_code, 200)
+        self.assertIn('ยังไม่พบข้อมูล', result.json()['answer'])
     def test_invalid_image_rejected_before_provider_call(self):
         result=self.client.post('/api/chat',files={'images':('fake.png',b'not an image','image/png')})
         self.assertEqual(result.status_code,415)

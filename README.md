@@ -2,7 +2,7 @@
 
 เว็บร้านซ่อม iPhone หน้าเดียวพร้อมผู้ช่วยแชทภาษาไทย ตอบจากข้อมูลร้านจริง (LightRAG + OpenAI) รองรับข้อความและภาพ มีระบบสมาชิก ประวัติแชท เคสซ่อม การอนุมัติใบเสนอราคา และ**การชำระเงินผ่าน Stripe (โหมดทดสอบ)** พร้อมหน้า Admin
 
-> **ผลตรวจล่าสุด (15 ต.ค. 2026, Docker local + OpenAI/LightRAG จริง):** eval คุณภาพคำตอบ **113/113** · unit/contract **75/75** · security OWASP Top 10:2025 **49/49** · โหลด 20 ผู้ใช้พร้อมกัน p95 **90 ms** (cache) · ค่า AI ต่อคำตอบใหม่ ≈ **$0.0028** — รายละเอียดใน [qa/results/](qa/results/)
+> **ผลตรวจล่าสุด (15 ต.ค. 2026, Docker local + OpenAI/LightRAG จริง):** eval คุณภาพคำตอบ **113/113** · RAG retrieval hit@3 **100%** (MRR 0.94) · unit/contract **80/80** · security OWASP Top 10:2025 **49/49** · โหลด 20 ผู้ใช้พร้อมกัน p95 **96 ms** (cache) · ค่า AI ต่อคำตอบใหม่ ≈ **$0.0028** — รายละเอียดใน [qa/results/](qa/results/)
 
 ## เปิดใช้งาน
 
@@ -93,7 +93,7 @@ docker compose exec api python seed_demo.py
 - **FastAPI**: input guard → fast cache → router → (SQLite สำหรับเคส/การชำระ) หรือ (catalog + LightRAG + generation + validator)
 - **Redis**: cache 5 ชั้น, history, lock, rate limit, ตัวนับ token/cache
 - **SQLite**: สมาชิก, แชท, เคส, ใบเสนอ, การชำระ (backup รายวัน)
-- **LightRAG**: คลังข้อมูลร้านจาก `knowledge/shop.md` และ `dist/catalog.json`
+- **LightRAG** (`RAG_MODE=naive`): คลังข้อมูลร้านจาก `knowledge/shop.md` (แยกตามหัวข้อ) และ `dist/catalog.json` (หนึ่ง chunk สั้นต่อรายการ)
 - **OpenAI**: `gpt-5.4-mini` สำหรับ router, ภาพ และคำตอบ; `text-embedding-3-small` สำหรับคลัง
 
 ## การทดสอบ
@@ -102,19 +102,23 @@ docker compose exec api python seed_demo.py
 
 | ชั้น | ผลล่าสุด | รายงาน |
 |---|---|---|
-| Unit / contract (mock OpenAI/LightRAG/Stripe, Redis จริง) | 75/75 ผ่าน | [unit-latest.md](qa/results/unit-latest.md) |
+| Unit / contract (mock OpenAI/LightRAG/Stripe, Redis จริง) | 80/80 ผ่าน | [unit-latest.md](qa/results/unit-latest.md) |
 | Eval คุณภาพคำตอบกับ OpenAI + LightRAG จริง | **113/113** — ราคา 30/30, ติดตามเคส 19/19, safety/OWASP LLM 20/20, กำกวม 16/16, ข้อมูลร้าน 14/14, หลายเทิร์น 8/8, ภาพ 5/5, ชำระเงิน 1/1 | [eval-latest.md](qa/results/eval-latest.md) |
+| RAG retrieval (26 คำถาม มีแหล่งที่ถูกต้องกำกับ) | hit@1 88%, hit@3 100%, MRR 0.94 (ก่อนจูน 31% / 96% / 0.63) | [retrieval-latest.md](qa/results/retrieval-latest.md) |
 | Security OWASP Top 10:2025 (A01–A10) | 49/49 ผ่าน | [security-latest.md](qa/results/security-latest.md) |
 | Load / performance | ดูหัวข้อถัดไป | [load-latest.md](qa/results/load-latest.md) |
 
 ประวัติการรันวันนี้ (เก็บไฟล์ไว้ทุกรอบ): รอบแรก 111/113 พบ A14 (ขอส่วนลดถูกจัดเป็นคำสั่งไม่ปลอดภัย) และ M03 (รวมราคาข้ามเทิร์นหาย) → แก้ router; รอบถัดมาพบ A05 (คำถามที่สองในข้อความเดียวหาย) → แก้ router และ F11 ตัวตรวจนับ "ไม่รับซ่อม Samsung" เป็นคำตอบผิด → เปลี่ยนเป็นตัวตรวจที่เข้าใจคำปฏิเสธ; รอบ 08:28 ถูก rate limit ต่อ IP ของระบบเองตัดหลังกรณีที่ 75 จึงปรับค่าเริ่มต้นเป็น 1,200 ข้อความ/ชม./IP สำหรับห้องเรียนที่ใช้ NAT เดียวกัน แล้วรันใหม่ทั้งชุด
 
+**จูน RAG (บ่าย):** วัด retrieval แยกพบว่าเอกสารร้านก้อนใหญ่ชนะทุกคำถามราคา (hit@1 31%) จึง (1) เขียน chunk สินค้าใหม่ให้สั้นและเฉพาะ ไม่ซ้ำข้อความเงื่อนไขกลาง (2) แยก `shop.md` เป็นหัวข้อ (3) เลิกเติมข้อความนำหน้าคำค้น (4) เปลี่ยนเป็น `RAG_MODE=naive` ซึ่งได้คะแนนเท่า/ดีกว่า `mix` และเร็วกว่า → hit@1 88% จากนั้นรัน eval ทั้งชุดซ้ำ เจอและแก้ 4 จุด: LightRAG ตอบ "ไม่พบ" ถูกนับเป็นระบบล่ม (F10), รวมราคาข้ามรุ่นผิดคู่ (A15: ตอบ 5,390 แทน 4,690), ไม่บอกราคาสินค้าทดแทน (P17), อาการจอเป็นเส้นถูกฟันธง (A04) — รอบสุดท้าย 113/113 (S20 ตรวจคะแนนซ้ำเพราะตัวตรวจคำปฏิเสธช่วงสั้นไป บันทึกในรายงาน)
+
 ## Performance และต้นทุน (วัดจริง)
 
 | ตัวชี้วัด | ผล |
 |---|---|
-| คำถามใหม่ที่ไม่เคยถาม (20 คำถาม) | p50 3.3 วินาที, p95 3.7 วินาที (router 1.3 · ค้นข้อมูล 0.4 คู่ขนาน · สร้างคำตอบ 1.5) |
-| คำถามที่อยู่ใน cache | backend p50 2 ms; ผ่าน HTTP 20 ผู้ใช้พร้อมกัน p50 37 ms, p95 90 ms, 414 คำขอ/วินาที, error 0 |
+| คำถามใหม่ที่ไม่เคยถาม | p50 3.3 วินาที, p95 4.2 วินาที (router 1.6 · ค้นข้อมูลเสร็จก่อน router · สร้างคำตอบ 1.7) |
+| คำถามที่ router เคยเห็นแล้ว / ถามต่อเนื่อง | p50 1.7 วินาที (eval 62 คำตอบ); การค้นแบบ naive ~0.4 วินาที แทน mix ~1.6 วินาที |
+| คำถามที่อยู่ใน cache | backend p50 2 ms; ผ่าน HTTP 20 ผู้ใช้พร้อมกัน p50 41 ms, p95 96 ms, 376 คำขอ/วินาที, error 0 |
 | Cache hit | คำถามซ้ำ: ทุกข้อที่ cache ได้ (91% ของทั้งหมด ส่วนที่เหลือคือเคส/การชำระ/guard ที่ตั้งใจไม่ cache); ต่างสำนวน 8/8 |
 | Single-flight | คำถามใหม่เดียวกัน 20 คำขอพร้อมกัน → เรียก OpenAI 2 ครั้ง (แทน ~40), LightRAG 1 ครั้ง |
 | ค่า AI | ≈ $0.0028 (≈ 0.10 บาท) ต่อคำตอบใหม่ (router + คำตอบ), input 67–79% มาจาก prompt cache; คำตอบจาก cache ไม่เสียเงิน; มีเพดานค่าใช้จ่ายรายวัน (USD) |

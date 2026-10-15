@@ -22,7 +22,7 @@ flowchart LR
       end
       Redis[(Redis: cache fast/router/answer/retrieval/vision, history, rate, lock, metrics)]
       DB[(SQLite: สมาชิก, แชท, เคส, ใบเสนอ, การชำระ)]
-      RAG[LightRAG: shop.md + catalog]
+      RAG[LightRAG naive vector: shop.md แยกหัวข้อ + catalog 16 chunk]
     end
     OpenAI[OpenAI Responses + Embeddings]
     Stripe[Stripe test mode]

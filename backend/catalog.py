@@ -102,15 +102,21 @@ def lookup(models, services):
     elif not models:
         allowed.update(i['price'] for i in catalog)
     allowed.update(p for *_, p in priced)
-    # Totals for several services on one model, differences for one service across models.
+    # Totals: any combination of the listed items may be summed (the customer may pair
+    # "จอ 13 + แบต 14"), but a ready-made total row is given only for a single model,
+    # where it cannot be read as the wrong pairing.
+    prices = [p for *_, p in priced]
+    for r in range(2, min(4, len(prices)) + 1):
+        allowed.update(sum(c) for c in itertools.combinations(prices, r))
     by_model = {}
     for family, variant, service, price in priced:
         by_model.setdefault((family, variant), []).append(price)
-    for (family, variant), prices in by_model.items():
-        if len(prices) >= 2:
-            for r in range(2, len(prices) + 1):
-                allowed.update(sum(c) for c in itertools.combinations(prices, r))
-            rows.append(f'รวมราคาประเมินเบื้องต้นของ {model_name(str(family), variant)}: {baht(sum(prices))} (รวมราคาเริ่มต้นของแต่ละรายการ ไม่ใช่ราคาเหมา)')
+    if len(by_model) == 1:
+        (family, variant), model_prices = next(iter(by_model.items()))
+        if len(model_prices) >= 2:
+            rows.append(f'รวมราคาประเมินเบื้องต้นของ {model_name(str(family), variant)}: {baht(sum(model_prices))} (รวมราคาเริ่มต้นของแต่ละรายการ ไม่ใช่ราคาเหมา)')
+    elif len(by_model) > 1 and len(prices) > len(by_model):
+        rows.append('ถ้าลูกค้าถามราคารวม ให้รวมเฉพาะคู่รุ่นและบริการที่ลูกค้าระบุจริง ห้ามรวมรายการของรุ่นอื่น')
     by_service = {}
     for family, variant, service, price in priced:
         by_service.setdefault(service, []).append((model_name(str(family), variant), price))

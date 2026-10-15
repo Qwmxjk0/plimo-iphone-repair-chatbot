@@ -233,4 +233,5 @@ flowchart LR
 | ภาพหน้าเว็บ (B13) | เสร็จ | WebP 76 KB รวม |
 | VPS kit | เสร็จ (ตรวจ config แล้ว) | `deploy/`; deploy จริงรอ VPS |
 | Security + load test | เสร็จ | `qa/results/security-latest.md`, `qa/results/load-latest.md` |
+| จูน RAG retrieval (chunk เฉพาะรายการ, แยกหัวข้อ, naive) | เสร็จ | hit@1 31% → 88%, `qa/results/retrieval-latest.md`, eval 113/113 |
 | README/เอกสารสำหรับผู้ตรวจ | เสร็จ | `README.md`, `qa/README.md`, `qa/guardrails.md` |

@@ -6,9 +6,11 @@
 
 | ตัวชี้วัด | ผล | ที่มา |
 |---|---|---|
-| คำถามใหม่ (ไม่ hit cache) 20 คำถาม | p50 3,331 ms, p95 3,657 ms; แยกขั้น p50: router 1,343 · retrieval 393 (คู่ขนาน) · generation 1,477 | `results/load-latest.md` |
+| คำถามใหม่ทั้งหมด (router + retrieval + generation ไม่มี cache เลย) | p50 3,300 ms, p95 4,151 ms; แยกขั้น p50: router 1,571 · retrieval เสร็จก่อน router · generation 1,685 | `results/load-latest.md` |
+| คำตอบที่ต้องสร้างใหม่ใน eval (บางข้อ router เคยเห็น) | p50 1,699 ms, p95 4,056 ms (62 คำตอบ) | `results/eval-latest.md` |
+| LightRAG retrieval | naive p50 ~400 ms (mix ~520–1,600 ms) | `results/retrieval-latest.md` |
 | ก่อนปรับ (เช้านี้, 72 คำถาม) | p50 3,090 ms, p95 5,500 ms | `results/eval-20261015-0808.json` |
-| คำถามใน cache | backend p50 2 ms, p95 3 ms; client ผ่าน HTTP 20 ผู้ใช้พร้อมกัน p50 37 ms, p95 90 ms, p99 135 ms, 414 คำขอ/วินาที, error 0/240 | `results/eval-latest.md`, `results/load-latest.md` |
+| คำถามใน cache | backend p50 2 ms, p95 3 ms; client ผ่าน HTTP 20 ผู้ใช้พร้อมกัน p50 41 ms, p95 96 ms, p99 143 ms, 376 คำขอ/วินาที, error 0/240 | `results/eval-latest.md`, `results/load-latest.md` |
 | Hit rate คำถามซ้ำ (session ใหม่) | 72/79 = 91% — ที่ไม่ hit คือเคส/การชำระ/guard ซึ่งตั้งใจไม่ cache | `results/eval-latest.md` |
 | Hit rate คำถามต่างสำนวน | 8/8 (เช้านี้ 3/8 ก่อนให้ router ใช้สำนวนมาตรฐาน) | `results/eval-latest.md` |
 | Single-flight | 20 คำขอเหมือนกันพร้อมกัน → OpenAI 2 calls, LightRAG 1 call, คำตอบเดียวกันทั้ง 20 | `results/load-latest.md` |
@@ -31,6 +33,7 @@
 | คำถามแรก: ค้น LightRAG คู่ขนานกับ router | ซ่อนเวลาค้นไว้ใต้เวลาของ router |
 | เพดานค่าใช้จ่ายรายวัน (USD) + quota ต่อสมาชิก/session/IP | บิลมีขีดจำกัด เกินแล้วยังตอบจาก cache และ DB ได้ |
 | ภาพหน้าเว็บเป็น WebP + lazy loading, gzip, cache header | หน้าแรกจาก ~4.5 MB เหลือ ~97 KB |
+| LightRAG แบบ naive + chunk สั้นเฉพาะรายการ | retrieval แม่นขึ้น (hit@1 31% → 88%) และไม่ต้องเรียก LLM สกัด keyword ทุกคำถามใหม่ |
 
 ทางเลือกที่วัดแล้วไม่ใช้: `gpt-5.4-nano` สำหรับ router ไม่เร็วกว่า mini (median 1,391 vs 1,202 ms เพราะเวลาส่วนใหญ่เป็น network/first token) และ streaming คำตอบไม่ใช้ เพราะต้องตรวจตัวเลขราคาทั้งคำตอบก่อนแสดง (เลือกความถูกต้องก่อนความรู้สึกเร็ว)
 

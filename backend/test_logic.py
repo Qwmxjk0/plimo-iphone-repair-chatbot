@@ -74,6 +74,11 @@ class CatalogTests(unittest.TestCase):
         self.assertIn(700, self.look('จอ iphone 13 กับ iphone 14')['allowed'])
         rows = ' '.join(self.look('สาย lightning iphone 15')['rows'])
         self.assertIn('Lightning ใช้ไม่ได้กับ iPhone 15', rows); self.assertIn('USB-C ใช้ได้กับ iPhone 15', rows)
+    def test_cross_model_totals_are_not_prebuilt(self):
+        facts = catalog.lookup([('13', 'base'), ('14', 'base')], ['screen', 'battery'])
+        self.assertIn(3200 + 1490, facts['allowed'])   # จอ 13 + แบต 14
+        self.assertFalse(any(r.startswith('รวมราคาประเมินเบื้องต้นของ') for r in facts['rows']))
+        self.assertTrue(any('จับคู่' in r or 'คู่รุ่น' in r for r in facts['rows']))
     def test_out_of_range_and_unknown_service(self):
         self.assertIn('นอกรุ่น', self.look('iPhone 8 ซ่อมได้ไหม')['rows'][0])
         self.assertIn('ไม่มีรายการและราคา', self.look('ตกน้ำ ซ่อมได้ไหม')['rows'][0])

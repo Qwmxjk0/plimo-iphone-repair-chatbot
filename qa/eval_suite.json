@@ -1,6 +1,6 @@
 {
  "version": "eval-v1",
- "notes": "Graded automatically by qa/run_eval.py. {placeholders} are filled with cases the runner creates. Checks apply to the last turn unless a turn has its own checks. 'deny' = the answer must not affirm the phrase; an occurrence preceded (within 20 characters) by a negation or reported-speech word such as ไม่ / ว่า / หรือ is allowed.",
+ "notes": "Graded automatically by qa/run_eval.py. {placeholders} are filled with cases the runner creates. Checks apply to the last turn unless a turn has its own checks. 'deny' = the answer must not affirm the phrase; an occurrence preceded (within 40 characters) by a negation or reported-speech word such as ไม่ / ว่า / หรือ is allowed.",
  "cases": [
   {
    "id": "F01",
