@@ -7,4 +7,3 @@ __pycache__
 tests
 .admin-login.txt
 *.sqlite3*
-.env.vps
