@@ -27,17 +27,26 @@ if command -v ufw >/dev/null; then
   ufw --force enable >/dev/null && ufw status | head -8
 fi
 
+log "2b/7 Swap (helps image builds on small servers)"
+if [ "$(swapon --show | wc -l)" -eq 0 ] && [ "$(free -m | awk '/Mem/{print $2}')" -lt 6000 ]; then
+  fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile >/dev/null && swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+swapon --show
+
 log "3/7 Configuration (.env)"
 [ -f .env ] || cp .env.example .env
 chmod 600 .env
-if ! grep -q '^OPENAI_API_KEY=.\+' .env; then read -rsp "OpenAI API key (input hidden): " v; echo; set_env OPENAI_API_KEY "$v"; fi
+ask() { # ask "prompt" -> value, or empty when nobody is at the keyboard (remote/non-interactive run)
+  local v=""; if [ -t 0 ]; then read -rsp "$1" v || true; echo; fi; printf '%s' "$v"; }
+if ! grep -q '^OPENAI_API_KEY=.\+' .env; then v="$(ask 'OpenAI API key (input hidden): ')"; [ -n "$v" ] || { echo "OPENAI_API_KEY missing in .env"; exit 1; }; set_env OPENAI_API_KEY "$v"; fi
 grep -q '^LIGHTRAG_API_KEY=.\+' .env || set_env LIGHTRAG_API_KEY "$(openssl rand -hex 24)"
 if ! grep -q '^ADMIN_PASSWORD=.\+' .env; then
   pw="$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-20)"; set_env ADMIN_PASSWORD "$pw"
   printf 'admin / %s\n' "$pw" > .admin-login.txt; chmod 600 .admin-login.txt
 fi
 if ! grep -q '^STRIPE_SECRET_KEY=sk_test_' .env; then
-  read -rsp "Stripe TEST secret key sk_test_... (Enter to skip payments): " v; echo
+  v="$(ask 'Stripe TEST secret key sk_test_... (Enter to skip payments): ')"
   case "$v" in sk_test_*) set_env STRIPE_SECRET_KEY "$v" ;; "") ;; *) echo "Only sk_test_ keys are accepted; payments stay off." ;; esac
 fi
 if [ -z "$DOMAIN" ]; then
