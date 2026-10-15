@@ -9,7 +9,7 @@ def seed():
         if c.execute('SELECT 1 FROM demo_seed WHERE version=?',('members-v1',)).fetchone():
             print('Demo records already exist; preserved.');return
         now=time.time();ids={}
-        for username,password,name,role in [('demo_user','PlimoMemberDemo2026!','สมาชิกตัวอย่าง','user'),('demo_admin','PlimoAdminDemo2026!','ผู้ดูแลตัวอย่าง','admin')]:
+        for username,password,name,role in [('demo_user','PlimoMemberDemo2026!','สมชาย','user'),('demo_admin','PlimoAdminDemo2026!','ผู้ดูแลร้าน','admin')]:
             row=c.execute('SELECT id FROM users WHERE username=?',(username,)).fetchone()
             uid=row['id'] if row else uuid.uuid4().hex;ids[role]=uid
             if not row:c.execute('INSERT INTO users VALUES(?,?,?,?,?,?)',(uid,username,name,m.password_hash(password),role,now))
