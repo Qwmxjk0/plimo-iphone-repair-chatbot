@@ -31,9 +31,13 @@ document.querySelector('#close-item').onclick=()=>document.querySelector('#item-
 fetch("catalog.json").then(response=>response.json()).then(items=>{catalog=items;render();}).catch(()=>{document.querySelector("#empty-state").hidden=false;document.querySelector("#empty-state").textContent="โหลดรายการไม่สำเร็จ กรุณาลองใหม่";});
 
 let chatTrigger;
-function openChat(event){event.preventDefault();chatTrigger=event.currentTarget;document.querySelector('#item-dialog').close();document.querySelector('#chat-panel').hidden=false;document.querySelector('#close-chat').focus();}
+// One chat launcher at a time: the floating button stays hidden while the hero's own chat button is on screen or the panel is open.
+const floating=document.querySelector('.floating-chat');let heroInView=true;
+function syncFloating(){floating.classList.toggle('is-hidden',heroInView||!document.querySelector('#chat-panel').hidden);}
+if('IntersectionObserver' in window){new IntersectionObserver(([entry])=>{heroInView=entry.isIntersecting;syncFloating();}).observe(document.querySelector('.hero-actions'));}else{heroInView=false;syncFloating();}
+function openChat(event){event.preventDefault();chatTrigger=event.currentTarget;document.querySelector('#item-dialog').close();document.querySelector('#chat-panel').hidden=false;syncFloating();document.querySelector('#close-chat').focus();}
 document.querySelectorAll('[data-open-chat]').forEach(button=>button.addEventListener('click',openChat));
-function closeChat(){document.querySelector('#chat-panel').hidden=true;chatTrigger?.focus();}
+function closeChat(){document.querySelector('#chat-panel').hidden=true;syncFloating();(chatTrigger&&!chatTrigger.classList.contains('is-hidden')?chatTrigger:document.querySelector('#member-open')).focus();}
 document.querySelector('#close-chat').onclick=closeChat;
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeChat();});
 window.addEventListener('message',event=>{if(event.origin===location.origin&&event.source===document.querySelector('#chat-frame').contentWindow&&event.data==='plimo-close-chat')closeChat();});

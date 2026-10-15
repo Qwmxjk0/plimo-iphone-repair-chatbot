@@ -25,6 +25,8 @@ h2{font-size:clamp(30px,4vw,48px);line-height:1.12}
 .header-actions{display:flex;gap:10px;align-items:center}
 .member-button{background:transparent;border:1px solid var(--line-strong);border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer}
 .member-button:hover{background:var(--surface-2)}
+.member-button.nav-cta{background:var(--accent-strong);border-color:transparent;color:#fff;font-weight:600;padding:7px 16px;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.member-button.nav-cta:hover{background:var(--accent)}
 .nav-chat{background:var(--accent-strong);border-radius:999px;padding:7px 16px;font-size:13px;font-weight:600}
 .nav-chat:hover{background:var(--accent)}
 
@@ -105,6 +107,8 @@ footer p{margin:0}
 /* Floating chat + panel */
 .floating-chat{position:fixed;right:24px;bottom:24px;z-index:19;background:var(--accent-strong);color:#fff;border-radius:999px;padding:12px 22px;font-weight:600;box-shadow:0 10px 40px rgba(10,132,255,.35)}
 .floating-chat:hover{background:var(--accent)}
+.floating-chat{transition:opacity .25s,transform .25s,visibility .25s}
+.floating-chat.is-hidden{opacity:0;transform:translateY(16px);visibility:hidden;pointer-events:none}
 .chat-panel{position:fixed;bottom:85px;right:25px;width:430px;height:min(680px,calc(100dvh - 115px));z-index:20;background:var(--surface);border:1px solid var(--line-strong);border-radius:20px;box-shadow:0 20px 80px rgba(0,0,0,.7);overflow:hidden;display:flex;flex-direction:column}
 .chat-panel-bar{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;background:var(--surface-2);border-bottom:1px solid var(--line);flex-shrink:0;font-size:13px}
 .chat-panel-bar i{display:inline-block;width:7px;height:7px;background:var(--ok);border-radius:50%;margin-right:7px}

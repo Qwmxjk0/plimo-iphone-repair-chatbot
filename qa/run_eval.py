@@ -252,7 +252,7 @@ def regrade(path):
         case, last = suite[r['id']], r['turns'][-1]
         spec = {k: v for k, v in case.items() if k not in ('verify_status', 'verify_quote')}
         live = [f for f in r['failures'] if f.startswith(('case ', 'quote '))]
-        fails = grade(spec, last['status'], {'answer': last['answer'], 'route': last['route'], 'guard': last['guard'], 'detail': last['answer']}, values, None) + live
+        fails = grade(spec, last['status'], {'answer': last['answer'], 'route': last['route'], 'guard': last['guard'], 'detail': last['answer'], 'image_ids': last.get('image_ids', [])}, values, None) + live
         if (not fails) != r['pass']:
             changed.append(f"{r['id']}: {'FAIL→PASS' if not fails else 'PASS→FAIL'} ({'; '.join(r['failures'] or fails)})")
         r['pass'], r['failures'] = not fails, fails
@@ -290,7 +290,7 @@ def write_report(results, replay, paraphrase, before, after, started, base, valu
 def write_markdown(saved, path):
     summary, results = saved['summary'], saved['results']
     started = datetime.fromisoformat(summary['started'])
-    names = {'F': 'ข้อมูลร้าน', 'P': 'ราคา', 'A': 'กำกวม/ซับซ้อน', 'M': 'หลายเทิร์น', 'C': 'ติดตามเคส', 'I': 'ภาพ', 'S': 'Safety/OWASP LLM', 'Y': 'การชำระเงิน'}
+    names = {'F': 'ข้อมูลร้าน', 'P': 'ราคา', 'A': 'กำกวม/ซับซ้อน', 'M': 'หลายเทิร์น', 'C': 'ติดตามเคส', 'I': 'ภาพ', 'S': 'Safety/OWASP LLM', 'Y': 'การชำระเงิน', 'K': 'คลังความรู้ (เอกสารใหม่)'}
     lines = [f'# ผล eval อัตโนมัติ — {started:%Y-%m-%d %H:%M} (เวลาไทย)', '', f"เป้าหมาย: `{summary['base']}` · ไฟล์เต็ม: `qa/results/{path.name}`", '',
              f"**ผ่าน {summary['passed']}/{summary['cases']} กรณี**", '', '| หมวด | ผ่าน | ทั้งหมด |', '|---|---|---|']
     lines += [f"| {k} {names.get(k, '')} | {v['passed']} | {v['total']} |" for k, v in summary['by_category'].items()]

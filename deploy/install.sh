@@ -57,7 +57,7 @@ if [ -z "$DOMAIN" ]; then
   DOMAIN="${IP//./-}.sslip.io"
 fi
 set_env SITE_ADDRESS "$DOMAIN"; set_env PUBLIC_BASE_URL "https://$DOMAIN"; set_env COOKIE_SECURE true
-grep -q '^KB_VERSION=' .env || set_env KB_VERSION plimo-estimate-v5
+grep -q '^KB_VERSION=' .env || set_env KB_VERSION plimo-estimate-v8
 
 log "4/7 Build and start"
 $COMPOSE build

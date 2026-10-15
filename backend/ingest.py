@@ -69,11 +69,21 @@ async def main():
         raise SystemExit('Set OPENAI_API_KEY and LIGHTRAG_API_KEY in .env first')
     # Use a NEW RAG workspace for changed knowledge to avoid obsolete policies.
     sources = [hashlib.sha256(text.encode()).hexdigest()[:12] + '-' + source for text, source in zip(texts,sources)]
+    url = os.getenv('LIGHTRAG_URL','http://lightrag:9621')+'/documents/texts'
     async with httpx.AsyncClient(timeout=120) as client:
-        response = await client.post(os.getenv('LIGHTRAG_URL','http://lightrag:9621')+'/documents/texts', headers={'X-API-Key':key}, json={'texts':texts,'file_sources':sources})
-        response.raise_for_status()
-        result=response.json()
-        print(json.dumps({'status':result.get('status'),'track_id':result.get('track_id'),'document_count':len(texts)},ensure_ascii=False))
+        response = await client.post(url, headers={'X-API-Key':key}, json={'texts':texts,'file_sources':sources})
+        if response.status_code == 409:
+            # Some documents are already indexed (adding a new knowledge file): send one by one, skip duplicates.
+            added = 0
+            for text, source in zip(texts, sources):
+                one = await client.post(url, headers={'X-API-Key':key}, json={'texts':[text],'file_sources':[source]})
+                if one.status_code != 409:
+                    one.raise_for_status(); added += 1
+            print(json.dumps({'status':'partial','added':added,'already_indexed':len(texts)-added},ensure_ascii=False))
+        else:
+            response.raise_for_status()
+            result=response.json()
+            print(json.dumps({'status':result.get('status'),'track_id':result.get('track_id'),'document_count':len(texts)},ensure_ascii=False))
         print('Submission is asynchronous. Check LightRAG document status before testing chat.')
 
 if __name__=='__main__':

@@ -34,7 +34,7 @@ services:
       LIGHTRAG_API_KEY: ${LIGHTRAG_API_KEY:-}
       LIGHTRAG_URL: http://lightrag:9621
       REDIS_URL: redis://redis:6379/0
-      KB_VERSION: ${KB_VERSION:-plimo-estimate-v5}
+      KB_VERSION: ${KB_VERSION:-plimo-estimate-v8}
       RAG_MODE: ${RAG_MODE:-naive}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
@@ -98,7 +98,7 @@ services:
       INPUT_DIR: /app/data/inputs
       RERANK_BINDING: "null"
     volumes:
-      - rag-data-estimate-v5:/app/data/rag_storage
+      - rag-data-estimate-v8:/app/data/rag_storage
       - rag-inputs:/app/data/inputs
     healthcheck:
       test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:9621/health',timeout=3)"]
@@ -110,5 +110,5 @@ services:
 volumes:
   member-data:
   redis-data:
-  rag-data-estimate-v5:
+  rag-data-estimate-v8:
   rag-inputs:
