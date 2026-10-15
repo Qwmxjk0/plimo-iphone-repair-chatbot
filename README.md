@@ -2,13 +2,15 @@
 
 เว็บร้านซ่อม iPhone หน้าเดียวพร้อมผู้ช่วยแชทภาษาไทย ตอบจากข้อมูลร้านจริง (LightRAG + OpenAI) รองรับข้อความและภาพ มีระบบสมาชิก ประวัติแชท เคสซ่อม การอนุมัติใบเสนอราคา และ**การชำระเงินผ่าน Stripe (โหมดทดสอบ)** พร้อมหน้า Admin
 
+> **บนเซิร์ฟเวอร์จริง (https://203-156-66-86.sslip.io, 15 ต.ค. 2026):** eval 113/113 · วงจรเคสด้วย AI 16/16 · security 51/51 — [eval-vps.md](qa/results/eval-vps.md) · [lifecycle-vps.md](qa/results/lifecycle-vps.md) · [security-vps.md](qa/results/security-vps.md)
+>
 > **ผลตรวจล่าสุด (15 ต.ค. 2026, Docker local + OpenAI/LightRAG จริง):** eval คุณภาพคำตอบ **113/113** · วงจรเคสเปิด→ปิดด้วย AI **16/16** · RAG retrieval hit@3 **100%** (MRR 0.94) · unit/contract **91/91** · security OWASP Top 10:2025 **51/51** · โหลด 20 ผู้ใช้พร้อมกัน p95 **96 ms** (cache) · ค่า AI ต่อคำตอบใหม่ ≈ **$0.0028** — รายละเอียดใน [qa/results/](qa/results/)
 
 ## เปิดใช้งาน
 
 | ที่ไหน | URL | หมายเหตุ |
 |---|---|---|
-| VPS (HTTPS) | รอ deploy (ต้องมี VPS) | ติดตั้งด้วย `deploy/install.sh` |
+| VPS (HTTPS) | **https://203-156-66-86.sslip.io** | ติดตั้งด้วย `deploy/install.sh` |
 | Docker บนเครื่อง | http://127.0.0.1:8081 | ดูหัวข้อ "ติดตั้งบนเครื่อง" |
 
 บัญชีตัวอย่าง: `demo_user` / `PlimoMemberDemo2026!` (สมาชิก มีประวัติแชทและเคสตัวอย่าง) ส่วน Admin บน Docker เครื่องใช้ `demo_admin` / `PlimoAdminDemo2026!` ได้ แต่บน VPS บัญชีนี้ถูกล็อกเพราะรหัสอยู่ใน repo ให้ใช้ `ADMIN_USERNAME` / `ADMIN_PASSWORD` ใน `.env` ของเซิร์ฟเวอร์ (ส่งให้ผู้ตรวจแยกต่างหาก)
