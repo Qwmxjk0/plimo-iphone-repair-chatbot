@@ -34,7 +34,7 @@ services:
       LIGHTRAG_API_KEY: ${LIGHTRAG_API_KEY:-}
       LIGHTRAG_URL: http://lightrag:9621
       REDIS_URL: redis://redis:6379/0
-      KB_VERSION: ${KB_VERSION:-plimo-estimate-v8}
+      KB_VERSION: ${KB_VERSION:-plimo-estimate-v9}
       RAG_MODE: ${RAG_MODE:-naive}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}

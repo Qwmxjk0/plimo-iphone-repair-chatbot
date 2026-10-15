@@ -7,7 +7,7 @@ function fail(err){me.textContent=err.message||'โหลดข้อมูล�
 function field(form,label,type='text',required=true){const l=node('label',label),i=document.createElement(type==='textarea'?'textarea':'input');if(type!=='textarea')i.type=type;i.required=required;l.append(i);form.append(l);return i;}
 function action(text,fn){const b=node('button',text,'member-action');b.type='button';b.onclick=fn;return b;}
 function resetMemberChat(cid=null){const frame=document.querySelector('#chat-frame');if(frame)frame.src='chat.html?widget=1'+(cid?'&conversation='+encodeURIComponent(cid):'&new=1');}
-function updateMemberButton(){document.querySelector('#member-open').textContent=memberUser?'บัญชี · '+memberUser.name:'ติดตามงานซ่อม';}
+function updateMemberButton(){document.querySelector('#member-open').textContent=memberUser?'บัญชี · '+memberUser.name:'เข้าสู่ระบบ';}
 function memberTabs(active){
  const toolbar=node('div','','member-toolbar'),t=node('nav','','member-tabs');t.setAttribute('aria-label','เมนูบัญชีสมาชิก');
  for(const [key,label] of [['cases','งานซ่อมของฉัน'],['history','ประวัติแชท'],['new','ส่งเคสใหม่']]){const b=action(label,()=>showMember(key));b.classList.toggle('active',active===key);b.setAttribute('aria-current',active===key?'page':'false');t.append(b);}

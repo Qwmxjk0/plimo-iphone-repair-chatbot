@@ -95,45 +95,92 @@ async def submit(client, base, headers, texts, sources):
             one.raise_for_status(); added += 1
     return added
 
+async def prune(client, base, headers, sources):
+    """Delete indexed sections that no longer exist in knowledge/ or the catalog (edited or removed),
+    so an edit replaces text instead of leaving the old version searchable. Deleting costs no model call."""
+    stale, page = [], 1
+    while True:
+        r = await client.post(base + '/documents/paginated', headers=headers, json={'page': page, 'page_size': 200})
+        r.raise_for_status(); data = r.json()
+        stale += [d['id'] for d in data['documents'] if d.get('file_path') not in sources]
+        if not data['pagination'].get('has_next'):
+            break
+        page += 1
+    if stale:
+        (await client.request('DELETE', base + '/documents/delete_document', headers=headers, json={'doc_ids': stale})).raise_for_status()
+    return len(stale)
+
 async def counts(client, base, headers):
     r = await client.get(base + '/documents/status_counts', headers=headers)
     r.raise_for_status()
     return r.json()['status_counts']
+
+async def indexed(client, base, headers):
+    """file_path -> status for every document LightRAG holds."""
+    out, page = {}, 1
+    while True:
+        r = await client.post(base + '/documents/paginated', headers=headers, json={'page': page, 'page_size': 200})
+        r.raise_for_status(); data = r.json()
+        out.update({d.get('file_path'): d.get('status') for d in data['documents']})
+        if not data['pagination'].get('has_next'):
+            return out
+        page += 1
+
+async def wait_idle(client, base, headers, deadline):
+    """Until LightRAG's pipeline (indexing AND deletions) is idle. Status counts alone miss deletions."""
+    await asyncio.sleep(2)
+    last = 0
+    while time.monotonic() < deadline:
+        busy_pipeline = (await client.get(base + '/documents/pipeline_status', headers=headers)).json().get('busy')
+        c = await counts(client, base, headers)
+        if not busy_pipeline and not sum(c.get(k, 0) for k in BUSY):
+            return True
+        if time.monotonic() - last > 15:
+            print(f"  indexing: {c.get('processed', 0)}/{c.get('all', 0)} done", flush=True); last = time.monotonic()
+        await asyncio.sleep(5)
+    return False
+
+async def ensure(client, base, headers, texts, sources):
+    """Make LightRAG hold exactly these documents, paying only for what is new or failed.
+    Complete store: list + compare only, no model call. Returns the final file_path -> status map."""
+    deadline = time.monotonic() + int(os.getenv('INGEST_WAIT_SECONDS', '1500'))
+    wanted = dict(zip(sources, texts))
+    for _ in range(3):
+        await wait_idle(client, base, headers, deadline)
+        if plan(await counts(client, base, headers)) == 'retry':
+            (await client.post(base + '/documents/reprocess_failed', headers=headers)).raise_for_status()
+            print('Retrying documents that failed before (for example while OpenAI credit was empty).')
+            await wait_idle(client, base, headers, deadline)
+        removed = await prune(client, base, headers, set(sources))
+        if removed:
+            print(f'Removed {removed} replaced section(s).')
+            await wait_idle(client, base, headers, deadline)
+        have = await indexed(client, base, headers)
+        missing = [s for s in sources if s not in have]
+        if not missing:
+            break
+        added = await submit(client, base, headers, [wanted[s] for s in missing], missing)
+        print(f'Adding {added} new or changed section(s); {len(sources) - len(missing)} already indexed.')
+        await wait_idle(client, base, headers, deadline)
+    return await indexed(client, base, headers)
 
 async def main():
     key = os.environ.get('LIGHTRAG_API_KEY')
     if not key or not os.environ.get('OPENAI_API_KEY'):
         raise SystemExit('Set OPENAI_API_KEY and LIGHTRAG_API_KEY in .env first')
     base, headers = os.getenv('LIGHTRAG_URL', 'http://lightrag:9621'), {'X-API-Key': key}
-    ensure = '--ensure' in sys.argv
     texts, sources = documents()
     async with httpx.AsyncClient(timeout=120) as client:
-        action, added = (plan(await counts(client, base, headers)) if ensure else 'submit'), 0
-        if action == 'retry':
-            (await client.post(base + '/documents/reprocess_failed', headers=headers)).raise_for_status()
-            print('Retrying documents that failed before (for example while OpenAI credit was empty).')
-        elif action == 'submit':
+        if '--ensure' not in sys.argv:
             added = await submit(client, base, headers, texts, sources)
             print(json.dumps({'documents': len(texts), 'added': added, 'already_indexed': len(texts) - added}, ensure_ascii=False))
-        if not ensure:
             print('Submission is asynchronous. Check LightRAG document status before testing chat.')
             return
-        # --ensure: wait until LightRAG has finished, and fail loudly if anything did not index.
-        # LightRAG starts work in the background: right after a submit or retry the counts may not move yet,
-        # so "idle" only counts once work was seen or after a grace period.
-        started, queued = time.monotonic(), action == 'retry' or added > 0
-        deadline = started + int(os.getenv('INGEST_WAIT_SECONDS', '1500'))
-        seen = False
-        while True:
-            c = await counts(client, base, headers)
-            busy = sum(c.get(k, 0) for k in BUSY)
-            seen = seen or busy > 0
-            if (not busy and (seen or not queued or time.monotonic() - started > 45)) or time.monotonic() > deadline:
-                break
-            print(f"  indexing: {c.get('processed', 0)}/{c.get('all', 0)} done", flush=True)
-            await asyncio.sleep(15)
-        print(json.dumps({'processed': c.get('processed', 0), 'failed': c.get('failed', 0), 'all': c.get('all', 0)}))
-        if busy or c.get('failed', 0) or c.get('processed', 0) < len(texts):
+        have = await ensure(client, base, headers, texts, sources)
+        missing = [s for s in sources if have.get(s) != 'processed']
+        extra = [s for s in have if s not in set(sources)]
+        print(json.dumps({'sections': len(sources), 'indexed': len(sources) - len(missing), 'not_indexed': missing[:5], 'stale': extra[:5]}, ensure_ascii=False))
+        if missing or extra:
             raise SystemExit('Knowledge base is NOT complete (check OpenAI credit, then deploy again: failed documents are retried).')
 
 if __name__=='__main__':

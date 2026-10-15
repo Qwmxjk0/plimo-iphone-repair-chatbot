@@ -31,7 +31,7 @@ def symptom_text(text, history):
 
 def propose_open(member, route, text, history):
     if not member:
-        return 'ส่งเคสซ่อมผ่านแชทได้หลังเข้าสู่ระบบครับ กดปุ่ม "ติดตามงานซ่อม" มุมขวาบนเพื่อเข้าสู่ระบบ แล้วบอกรุ่นและอาการอีกครั้งได้เลยครับ', None
+        return 'ส่งเคสซ่อมผ่านแชทได้หลังเข้าสู่ระบบครับ กดปุ่ม "เข้าสู่ระบบ" มุมขวาบน แล้วบอกรุ่นและอาการอีกครั้งได้เลยครับ', None
     model = case_model(route['models'])
     if not model:
         unsupported = [m for m in route['models'] if not case_model([m])]
