@@ -14,7 +14,7 @@ class ScopedRedis:
     @property
     def values(self):
         sync=SyncRedis.from_url(os.getenv('REDIS_URL','redis://redis:6379/0'),decode_responses=True)
-        try:return {k[len(self.prefix):]:sync.get(k) for k in sync.scan_iter(self.prefix+'*')}
+        try:return {k[len(self.prefix):]:sync.get(k) for k in sync.scan_iter(self.prefix+'*') if sync.type(k)=='string'}
         finally:sync.close()
     async def get(self,k):return await self.redis.get(self.prefix+k)
     async def set(self,k,v,**kw):return await self.redis.set(self.prefix+k,v,**kw)
@@ -23,6 +23,9 @@ class ScopedRedis:
     async def expire(self,k,t):return await self.redis.expire(self.prefix+k,t)
     async def eval(self,script,n,k,token):return await self.redis.eval(script,n,self.prefix+k,token)
     async def ping(self):return await self.redis.ping()
+    async def hincrby(self,k,f,n):return await self.redis.hincrby(self.prefix+k,f,n)
+    async def hget(self,k,f):return await self.redis.hget(self.prefix+k,f)
+    async def hgetall(self,k):return await self.redis.hgetall(self.prefix+k)
 
 class RedisIntegration(test_chat.ChatTests):
     # Reuse provider contract tests with real Redis instead of MemoryRedis.
@@ -46,18 +49,20 @@ class RedisIntegration(test_chat.ChatTests):
         im=io.BytesIO();Image.new('RGB',(60,80),'green').save(im,'PNG')
         files={'images':('test.png',im.getvalue(),'image/png')}
         self.assertEqual(self.client.post('/api/chat',data={'text':'ช่วยดูภาพ'},files=files).status_code,200)
-        self.assertEqual(len(self.calls),3)
-        for kind,ttl in [('answer',1800),('retrieve',3600),('vision',86400),('history',86400)]:
-            keys=self.keys(kind);self.assertEqual(len(keys),1)
+        self.assertEqual(self.kinds(),['router','vision','retrieve','answer'])
+        for kind,ttl in [('answer',1800),('retrieve',43200),('vision',86400),('history',86400),('router',43200)]:
+            keys=self.keys(kind);self.assertEqual(len(keys),1,kind)
             self.assertTrue(ttl-30<=self.sync.ttl(keys[0])<=ttl,(kind,self.sync.ttl(keys[0])))
-        self.assertFalse(self.keys('lock'))
-        repeat=self.client.post('/api/chat',data={'text':'ช่วยดูภาพ'},files=files)
-        self.assertTrue(repeat.json()['cache']['answer']);self.assertEqual(len(self.calls),3)
-        # Same observation + query, but remove only this test's answer/history.
+        self.assertFalse(self.keys('lock'));self.assertFalse(self.keys('inflight'))
+        self.assertGreater(int(self.sync.hget(self.keys('metrics')[0],'tokens_total')),0)
+        repeat=self.client.post('/api/chat',data={'text':'ช่วยดูภาพ'},files=files).json()
+        # New context means a new routing decision; the image observation and answer are reused.
+        self.assertTrue(repeat['cache']['answer']);self.assertTrue(repeat['cache']['vision'])
+        self.assertEqual(self.kinds()[4:],['router'])
         self.sync.delete(*(self.keys('answer')+self.keys('history')))
-        r=self.client.post('/api/chat',data={'text':'ช่วยดูภาพ'},files=files)
-        self.assertTrue(r.json()['cache']['vision']);self.assertTrue(r.json()['cache']['retrieval'])
-        self.assertEqual(len(self.calls),4)
+        r=self.client.post('/api/chat',data={'text':'ช่วยดูภาพ'},files=files).json()
+        self.assertTrue(r['cache']['router']);self.assertTrue(r['cache']['vision']);self.assertTrue(r['cache']['retrieval'])
+        self.assertEqual(self.kinds()[5:],['answer'])
     def test_rate_limit_and_existing_lock(self):
         self.client.post('/api/chat',data={'text':'ร้านเปิดกี่โมง'})
         session=self.client.cookies.get('plimo_session')
@@ -66,7 +71,7 @@ class RedisIntegration(test_chat.ChatTests):
         self.assertEqual(self.client.post('/api/chat',data={'text':'ร้านเปิดกี่โมง'}).status_code,409)
         self.assertEqual(self.sync.get(lock),'another-request')
         self.sync.delete(lock)
-        self.sync.set(self.keys('rate')[0],60,ex=3600)
+        for key in self.keys('rate'):self.sync.set(key,10**6,ex=3600)
         self.assertEqual(self.client.post('/api/chat',data={'text':'ร้านเปิดกี่โมง'}).status_code,429)
     def test_lock_release_does_not_delete_replacement(self):
         original=self.upstream

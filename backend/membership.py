@@ -1,8 +1,10 @@
 """Local MVP: persistent users, owned conversations and repair case workflow."""
 import hashlib, hmac, json, os, re, secrets, sqlite3, time, uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
+import nlu
 
 router=APIRouter(prefix='/api')
 DB_PATH=os.getenv('MEMBER_DB','/app/data/members.sqlite3')
@@ -72,16 +74,24 @@ def clean_username(value):
     value=value.strip().lower()
     if not re.fullmatch(r'[a-z0-9_.-]{3,32}',value):raise HTTPException(422,'ชื่อบัญชีใช้ a-z, 0-9, จุด ขีด และขีดล่าง 3–32 ตัว')
     return value
-def auth_limit(request):
-    ip=request.headers.get('x-forwarded-for',request.client.host if request.client else 'unknown')
+AUTH_IP_LIMIT=int(os.getenv('AUTH_IP_LIMIT','100'))
+def client_ip(request):
+    """nginx sets X-Forwarded-For to the real client (real_ip trusts only the proxy network)."""
+    forwarded=request.headers.get('x-forwarded-for','').split(',')[0].strip()
+    return forwarded or (request.client.host if request.client else 'unknown')
+def auth_limit(request,username=''):
+    # Per account+IP stops guessing one password; the wide per-IP cap keeps a
+    # classroom behind one NAT from locking everyone out at once.
+    ip=client_ip(request);now=time.time();keys=[ip,ip+'|'+username[:64]]
     with db() as c:
-        c.execute('DELETE FROM attempts WHERE created<?',(time.time()-900,))
-        if c.execute('SELECT COUNT(*) FROM attempts WHERE ip=?',(ip,)).fetchone()[0]>=10:raise HTTPException(429,'ลองเข้าสู่ระบบบ่อยเกินไป กรุณารอ 15 นาที')
-        c.execute('INSERT INTO attempts VALUES(?,?)',(ip,time.time()))
+        c.execute('DELETE FROM attempts WHERE created<?',(now-900,))
+        per_ip,per_account=(c.execute('SELECT COUNT(*) FROM attempts WHERE ip=?',(k,)).fetchone()[0] for k in keys)
+        if per_account>=10 or per_ip>=AUTH_IP_LIMIT:raise HTTPException(429,'ลองเข้าสู่ระบบบ่อยเกินไป กรุณารอ 15 นาที')
+        c.executemany('INSERT INTO attempts VALUES(?,?)',[(k,now) for k in keys])
 
 @router.post('/auth/register')
 def register(body:Credentials,request:Request,response:Response):
-    auth_limit(request);name=clean_username(body.username)
+    auth_limit(request,body.username.strip().lower());name=clean_username(body.username)
     u={'id':uuid.uuid4().hex,'username':name,'name':body.name.strip() or name,'role':'user'}
     try:
         with db() as c:c.execute('INSERT INTO users VALUES(?,?,?,?,?,?)',(u['id'],name,u['name'],password_hash(body.password),'user',time.time()))
@@ -89,7 +99,7 @@ def register(body:Credentials,request:Request,response:Response):
     new_session(response,u);return {'user':u}
 @router.post('/auth/login')
 def login(body:Credentials,request:Request,response:Response):
-    auth_limit(request);name=clean_username(body.username)
+    auth_limit(request,body.username.strip().lower());name=clean_username(body.username)
     with db() as c:row=c.execute('SELECT * FROM users WHERE username=?',(name,)).fetchone()
     stored=row['password'] if row else password_hash('dummy-password')
     if not row or not hmac.compare_digest(stored,password_hash(body.password,stored.split(':')[0])):raise HTTPException(401,'ชื่อบัญชีหรือรหัสผ่านไม่ถูกต้อง')
@@ -239,23 +249,48 @@ def decide_quote(cid:int,body:QuoteDecision,request:Request):
     return {'ok':True,'decision':'approved' if approved else 'rejected'}
 
 STATUS_NAMES=dict(zip(STATUSES,['ส่งเคสแล้ว','ร้านรับเรื่อง','กำลังตรวจเช็ค','รออนุมัติราคา','กำลังซ่อม','พร้อมรับเครื่อง','ปิดเคส','ยกเลิก']))
-def is_case_question(text):
-    return bool(re.search(r'\bPLM-\d+\b|เคสของฉัน|สถานะ.{0,20}(เคส|ซ่อม|เครื่อง)|(เคส|งานซ่อม).{0,20}(ถึงไหน|สถานะ)|ซ่อม.{0,15}เสร็จ|รับเครื่อง.{0,10}ได้ยัง',text,re.I))
-
-def case_answer(u,text):
-    if not u:return 'กรุณาเข้าสู่ระบบก่อนถามสถานะเคสของคุณครับ'
-    match=re.search(r'\bPLM-(\d+)\b',text,re.I)
+is_case_question=nlu.is_case_question
+TH=timezone(timedelta(hours=7))
+THAI_MONTHS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
+QUOTE_NAMES={'pending':'รอคุณอนุมัติ','approved':'อนุมัติแล้ว','rejected':'ปฏิเสธแล้ว','superseded':'มีใบเสนอใหม่แทน'}
+def thai_time(ts):
+    t=datetime.fromtimestamp(ts,TH);return f"{t.day} {THAI_MONTHS[t.month-1]} {t.year+543} {t:%H:%M} น."
+def status_label(item):
+    q=item['quote']
+    if item['status']=='awaiting_approval' and q and q['status']=='approved':return 'อนุมัติราคาแล้ว รอร้านเริ่มซ่อม'
+    return STATUS_NAMES[item['status']]
+def case_lines(item,events,topic):
+    q=item['quote'];lines=[f"{item['reference']} · {item['model']} · สถานะ: {status_label(item)}",'อัปเดตล่าสุด: '+thai_time(item['updated'])]
+    note=next((e['note'] for e in reversed(events) if e['note']),'')
+    if note:lines.append('ข้อความล่าสุดจากร้าน: '+note[:300])
+    if q:
+        lines.append(f"ใบเสนอราคา #{q['id']}: {q['amount']:,.2f} บาท · {QUOTE_NAMES[q['status']]}")
+        if q['status']=='pending' and item['status']=='awaiting_approval':lines.append('อนุมัติหรือปฏิเสธราคาได้ที่ บัญชี → งานซ่อมของฉัน')
+    elif topic in ('price','payment'):lines.append('เคสนี้ยังไม่มีใบเสนอราคา ทางร้านจะเสนอราคาหลังตรวจเช็ค')
+    lines.extend(case_extra_lines(item,topic))
+    if topic=='action':lines.append('แชทไม่สามารถยกเลิก อนุมัติ หรือแก้ไขเคสแทนคุณได้ กรุณาทำที่ บัญชี → งานซ่อมของฉัน หรือแจ้งทางร้านครับ')
+    if topic=='pickup' and item['status']!='ready':lines.append('เมื่อซ่อมเสร็จ สถานะจะเปลี่ยนเป็น "พร้อมรับเครื่อง" ตรวจได้ในบัญชีหรือถามในแชทนี้ครับ')
+    return lines
+def case_extra_lines(item,topic):
+    """Extension point for payment details; kept separate from case status."""
+    return []
+def case_answer(u,text,ref=None,topic='status'):
+    """Case status straight from SQLite. Returns (answer, case id answered or None)."""
+    if not u:return 'กรุณาเข้าสู่ระบบก่อนถามสถานะเคสของคุณครับ หลังเข้าสู่ระบบพิมพ์เลขเคส เช่น PLM-00012 ได้เลยครับ',None
+    ref=ref or nlu.parse_case_ref(text)
     with db() as c:
-        if match:
-            raw=match.group(1)
-            rows=[] if len(raw)>12 else c.execute('SELECT * FROM cases WHERE id=? AND user_id=?',(int(raw),u['id'])).fetchall()
+        if ref:rows=c.execute('SELECT * FROM cases WHERE id=? AND user_id=?',(ref,u['id'])).fetchall()
         else:rows=c.execute('SELECT * FROM cases WHERE user_id=? ORDER BY updated DESC,id DESC LIMIT 5',(u['id'],)).fetchall()
-    if not rows:return 'ไม่พบเคสนี้ในบัญชีของคุณครับ' if match else 'บัญชีของคุณยังไม่มีเคสซ่อมครับ'
+        events={r['id']:c.execute('SELECT status,note,created FROM case_events WHERE case_id=? ORDER BY id',(r['id'],)).fetchall() for r in rows}
+    # Someone else's case and a missing case get the same reply: no existence leak.
+    if not rows:return ('ไม่พบเคสนี้ในบัญชีของคุณครับ กรุณาตรวจเลข PLM อีกครั้ง' if ref else 'บัญชีของคุณยังไม่มีเคสซ่อมครับ'),None
+    if len(rows)==1:
+        item=case_data(rows[0])
+        return '\n'.join(['สถานะล่าสุดจากระบบเคสของคุณครับ']+case_lines(item,events[item['id']],topic)),item['id']
     lines=['สถานะล่าสุดจากระบบเคสของคุณครับ']
     for row in rows:
-        item=case_data(row);q=item['quote'];label=STATUS_NAMES[item['status']]
-        if item['status']=='awaiting_approval' and q and q['status']=='approved':label='อนุมัติราคาแล้ว รอร้านเริ่มซ่อม'
-        lines.append(item['reference']+' · '+item['model']+' · '+label)
+        item=case_data(row);q=item['quote']
+        lines.append(item['reference']+' · '+item['model']+' · '+status_label(item))
         if q and q['status']=='pending' and item['status']=='awaiting_approval':lines.append(f"ราคาเสนอ {q['amount']:,.2f} บาท — เปิดบัญชี → งานซ่อมของฉัน เพื่ออนุมัติหรือปฏิเสธราคา")
-    if not match:lines.append('แสดงสูงสุด 5 เคสล่าสุด ระบุเลข PLM-xxxxx เพื่อดูเคสที่ต้องการ')
-    return '\n\n'.join(lines)
+    lines.append('แสดงสูงสุด 5 เคสล่าสุด ระบุเลข PLM-xxxxx เพื่อดูรายละเอียดเคสที่ต้องการ')
+    return '\n\n'.join(lines),None

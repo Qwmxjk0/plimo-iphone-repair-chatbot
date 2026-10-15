@@ -38,9 +38,10 @@ class MemberTests(unittest.TestCase):
             stored=c.execute('SELECT password FROM users WHERE username=?',('alice',)).fetchone()[0]
         self.assertNotIn('alice-test-password',stored)
     def test_chat_persists_and_isolated_across_members(self):
-        async def retrieve(query,session):return {'chunks':[{'content':'ข้อมูลทดสอบ'}],'sources':[]},False
+        async def retrieve(query,session=None):return {'chunks':[{'content':'ข้อมูลทดสอบ'}],'sources':[]},False
         async def generate(*args):return 'คำตอบทดสอบส่วนตัว'
-        with patch.object(main,'OPENAI_KEY','test'),patch.object(main,'RAG_KEY','test'),patch.object(main,'cache',MemoryRedis()),patch.object(main,'retrieve',retrieve),patch.object(main,'generate',generate):
+        async def route(text,history,active,images):return main.router.fallback(text),False
+        with patch.object(main,'OPENAI_KEY','test'),patch.object(main,'RAG_KEY','test'),patch.object(main,'cache',MemoryRedis()),patch.object(main,'retrieve',retrieve),patch.object(main,'generate',generate),patch.object(main,'route_message',route):
             result=self.a.post('/api/chat',data={'text':'ข้อความส่วนตัวของอลิซ'})
             self.assertEqual(result.status_code,200);cid=result.json()['conversation_id']
             self.assertEqual(len(self.a.get('/api/member/conversations/'+cid).json()['messages']),2)
