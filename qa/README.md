@@ -1,5 +1,7 @@
 # Plimo test suite
 
+F17: [Guardrails และการจับคู่ OWASP LLM Top 10 2026](guardrails.md) ระบุ implementation, วิธีตรวจรับ และข้อจำกัดแยกจากผลผ่านจริง Expected ของ Q06/Q10 ใช้นโยบายราคาประเมินปัจจุบัน ไม่ใช้คำตอบสาธิตเดิมเป็นเกณฑ์
+
 The 20 cases in `cases.json` cover 10 questions, 5 images and 5 safety cases. The image fixtures are synthetic test illustrations and mock screenshots; they do not represent a real customer's device or real payment. Never use them as shop knowledge or as evidence that real defect diagnosis is accurate.
 
 Run: `python3 qa/run_live.py`. Without configured OpenAI and LightRAG, all cases are recorded as **blocked**, with null actual answers and times. A static Sites demo is not a live backend target. After setting keys, starting the RAG profile and finishing ingestion, run against http://127.0.0.1:8081. This invokes paid OpenAI API calls. `--case Q01` runs one case first. Output includes actual response, HTTP status, measured elapsed time, backend stage timings, source references, cache flags, and manual pass/fail fields.
@@ -24,3 +26,13 @@ Extra stack checks:
 Run offline contracts: `docker compose exec -T api python -m unittest test_chat -v`. They mock OpenAI, LightRAG and Redis, so they validate application behavior, not provider quality or deployed Redis persistence. The smoke audit separately checks actual Docker containers and Redis.
 
 Suggested performance report: measure uncached and cached requests separately using the same case/session. Record total/vision/retrieval/generation ms and cache flags. Set a latency target only after a first live measurement; do not promise a fixed response time from offline tests.
+
+## Bounded OWASP red-team probes
+
+รัน `python3 qa/run_redteam.py` เฉพาะ Docker local `http://127.0.0.1:8081` สคริปต์ล็อก target ไม่รับ URL ภายนอก ใช้บัญชี demo_user ที่เตรียมไว้และสร้างบัญชีทดสอบสังเคราะห์ใหม่หนึ่งบัญชี ไม่สำรวจบัญชีลูกค้าจริง ไม่แก้ shared RAG หรือสถานะงาน ไม่ทดสอบ flood/DoS มีการเว้นคำขอและ logout หลังทดสอบ บัญชีทดสอบและบทสนทนาที่สร้างเก็บไว้เป็นหลักฐาน ไม่ลบข้อมูลอัตโนมัติ
+
+- `redteam-cases.json`: 10 โจทย์ adversarial รวม Python นอกงานร้าน injection แบบข้อความ/ภาพ รุ่นผิด นโยบายปลอม และ HTML output
+- `results/redteam-live.json`: ผลคำขอจริง + การตรวจสิทธิ์ 7 กรณี HTTP 200 ไม่เท่ากับผ่าน ต้องอ่านคำตอบและตรวจผลที่เกิดขึ้น
+- Script เรียก OpenAI API จริงและมีค่าใช้จ่าย; ไม่พิมพ์ token/API key หรือรหัสผ่านบัญชีที่สร้างลงผลลัพธ์
+- `results/redteam-review.md`: ผล review และช่องว่าง โดยไม่อ้างว่าผ่าน OWASP ทั้ง 10 หมวด
+- การทดสอบข้อความลูกค้าคนอื่นใน RAG เป็นการขอข้อมูลผ่าน prompt และทดสอบ ownership ของ API ไม่มีการฝังข้อมูลส่วนตัวหรือ poison คลังจริง

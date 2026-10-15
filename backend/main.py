@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import os
+import re
 import secrets
 import time
 import unicodedata
@@ -65,6 +66,22 @@ def digest(value):
 
 def normalize(text):
     return " ".join(unicodedata.normalize("NFC", text).split())
+
+def cache_text(text):
+    """Conservative Thai suffix folding, never a general semantic equivalence test.
+
+    Only strip laughter following a polite suffix: bare 555 may be a price.
+    Keep original text for the model, case routing and stored conversations.
+    """
+    original = normalize(text)
+    folded = original
+    suffix = r"\s*(?:ครับ(?:ผม)?|คับ|ค่ะ[ะ]*|คะ[ะ]*|คร่า[า]*|ค่า[า]*)(?:\s*5{3,})*[!！?？]*$"
+    while True:
+        candidate = re.sub(suffix, "", folded).strip()
+        if candidate == folded:
+            break
+        folded = candidate
+    return folded or original
 
 def clean_image(data):
     if len(data) > MAX_IMAGE:
@@ -185,9 +202,13 @@ async def chat(request: Request, response: Response, text: Annotated[str, Form()
             hashes = [hashlib.sha256(data).hexdigest() for data in processed]
             history = await get_cache("history:" + session) or (membership.history(cid) if cid else [])
             user_content = text + (" [มีภาพประกอบ]" if images else "")
-            repeated = len(history) >= 2 and history[-2].get("content") == user_content and history[-2].get("image_hashes", []) == hashes
+            canonical_text = cache_text(text)
+            previous_text = history[-2].get("content", "") if len(history) >= 2 else ""
+            if images and previous_text.endswith(" [มีภาพประกอบ]"):
+                previous_text = previous_text[:-len(" [มีภาพประกอบ]")]
+            repeated = len(history) >= 2 and cache_text(previous_text) == canonical_text and history[-2].get("image_hashes", []) == hashes
             context_history = history[:-2] if repeated else history
-            answer_key = "answer:" + digest([session, text, hashes, context_history, KB_VERSION, PROMPT_VERSION, MODEL, VISION_MODEL, MODE])
+            answer_key = "answer:" + digest(["thai-suffix-v1", session, canonical_text, hashes, context_history, KB_VERSION, PROMPT_VERSION, MODEL, VISION_MODEL, MODE])
             answer = await get_cache(answer_key)
             if answer:
                 hits["answer"] = True

@@ -81,6 +81,24 @@ class ChatTests(unittest.TestCase):
         self.assertFalse(result.json()['cache']['answer'])
         self.assertFalse(result.json()['cache']['vision'])
         self.assertEqual(len(self.calls),before+3)
+    def test_thai_suffix_variations_reuse_answer_without_upstream_calls(self):
+        first = self.client.post('/api/chat', data={'text':'ร้านเปิดกี่โมงครับ'})
+        self.assertEqual(first.status_code, 200)
+        for text in ['ร้านเปิดกี่โมงคร่าาา 555555', 'ร้านเปิดกี่โมงค่ะ', 'ร้านเปิดกี่โมงครับ555']:
+            result = self.client.post('/api/chat', data={'text':text})
+            self.assertTrue(result.json()['cache']['answer'])
+        self.assertEqual(len(self.calls), 2)
+        self.assertIn('ร้านเปิดกี่โมงครับ', self.calls[1][1]['input'][0]['content'][0]['text'])
+
+    def test_suffix_folding_preserves_meaningful_details(self):
+        self.assertEqual(main.cache_text('ราคา 555'), 'ราคา 555')
+        self.assertEqual(main.cache_text('ครับ'), 'ครับ')
+        self.assertEqual(main.cache_text('ราคา 555 ครับ'), 'ราคา 555')
+        self.assertEqual(main.cache_text('PLM-00555 ค่ะ'), 'PLM-00555')
+        self.assertNotEqual(main.cache_text('iPhone 13 ครับ'), main.cache_text('iPhone 13 Pro Max ค่ะ'))
+        self.assertNotEqual(main.cache_text('ไม่เปลี่ยนแบตครับ'), main.cache_text('เปลี่ยนแบตค่ะ'))
+        self.assertEqual(main.cache_text('เปลี่ยนแบตคร่าาา 555555'), 'เปลี่ยนแบต')
+
     def test_missing_context_skips_answer_model(self):
         self.no_context=True
         result=self.client.post('/api/chat',data={'text':'มีส่วนลดไหม'})
