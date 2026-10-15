@@ -2,7 +2,7 @@
 
 เว็บร้านซ่อม iPhone หน้าเดียวพร้อมผู้ช่วยแชทภาษาไทย ตอบจากข้อมูลร้านจริง (LightRAG + OpenAI) รองรับข้อความและภาพ มีระบบสมาชิก ประวัติแชท เคสซ่อม การอนุมัติใบเสนอราคา และ**การชำระเงินผ่าน Stripe (โหมดทดสอบ)** พร้อมหน้า Admin
 
-> **บนเซิร์ฟเวอร์จริง (https://203-156-66-86.sslip.io, 15 ต.ค. 2026):** eval 113/113 · วงจรเคสด้วย AI 16/16 · security 51/51 — [eval-vps.md](qa/results/eval-vps.md) · [lifecycle-vps.md](qa/results/lifecycle-vps.md) · [security-vps.md](qa/results/security-vps.md)
+> **บนเซิร์ฟเวอร์จริง (https://203-156-66-86.sslip.io, 15 ต.ค. 2026):** eval 123/123 (รวมภาพยาก 15 กรณี) · วงจรเคสด้วย AI 16/16 · security 51/51 · รูปแชทเก็บใน Cloudflare R2 แบบ private — [eval-vps.md](qa/results/eval-vps.md) · [lifecycle-vps.md](qa/results/lifecycle-vps.md) · [security-vps.md](qa/results/security-vps.md)
 >
 > **ผลตรวจล่าสุด (15 ต.ค. 2026, Docker local + OpenAI/LightRAG จริง):** eval คุณภาพคำตอบ **113/113** · วงจรเคสเปิด→ปิดด้วย AI **16/16** · RAG retrieval hit@3 **100%** (MRR 0.94) · unit/contract **91/91** · security OWASP Top 10:2025 **51/51** · โหลด 20 ผู้ใช้พร้อมกัน p95 **96 ms** (cache) · ค่า AI ต่อคำตอบใหม่ ≈ **$0.0028** — รายละเอียดใน [qa/results/](qa/results/)
 
