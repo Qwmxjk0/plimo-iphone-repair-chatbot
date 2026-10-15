@@ -1,10 +1,20 @@
+# Base stack. Local: `docker compose --profile rag up -d --build` also loads
+# compose.override.yaml (127.0.0.1:8081). VPS: deploy/install.sh uses compose.prod.yaml (HTTPS).
+x-logging: &logging
+  driver: json-file
+  options: {max-size: "10m", max-file: "3"}
 services:
   web:
     build: .
-    ports:
-      - "127.0.0.1:8081:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    logging: *logging
     restart: unless-stopped
   api:
     build:
@@ -14,24 +24,41 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-mini}
       OPENAI_VISION_MODEL: ${OPENAI_VISION_MODEL:-gpt-5.4-mini}
+      OPENAI_ROUTER_MODEL: ${OPENAI_ROUTER_MODEL:-gpt-5.4-mini}
+      OPENAI_REASONING_EFFORT: ${OPENAI_REASONING_EFFORT:-}
+      DAILY_TOKEN_BUDGET: ${DAILY_TOKEN_BUDGET:-2000000}
+      CHAT_IP_PER_HOUR: ${CHAT_IP_PER_HOUR:-400}
+      CHAT_SESSION_PER_HOUR: ${CHAT_SESSION_PER_HOUR:-60}
+      CHAT_MEMBER_PER_HOUR: ${CHAT_MEMBER_PER_HOUR:-120}
       LIGHTRAG_API_KEY: ${LIGHTRAG_API_KEY:-}
       LIGHTRAG_URL: http://lightrag:9621
       REDIS_URL: redis://redis:6379/0
-      KB_VERSION: ${KB_VERSION:-plimo-estimate-v3}
+      KB_VERSION: ${KB_VERSION:-plimo-estimate-v4}
       RAG_MODE: ${RAG_MODE:-mix}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
       MEMBER_DB: /app/data/members.sqlite3
     volumes:
       - member-data:/app/data
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging: *logging
     restart: unless-stopped
   redis:
-    image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    image: redis:7.4.11-alpine
+    # Every key has a TTL, so under memory pressure only expiring cache entries are evicted.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "volatile-lru"]
     volumes:
       - redis-data:/data
     healthcheck:
@@ -39,10 +66,12 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+    logging: *logging
     restart: unless-stopped
   lightrag:
     profiles: ["rag"]
-    image: ${LIGHTRAG_IMAGE:-ghcr.io/hkuds/lightrag:latest}
+    # Pinned to the multi-arch image digest that the eval suite ran against.
+    image: ${LIGHTRAG_IMAGE:-ghcr.io/hkuds/lightrag@sha256:5bdbd524931b011df246fe20888d110cef691e6804c12cde636a2b746d7de27e}
     environment:
       HOST: 0.0.0.0
       PORT: 9621
@@ -63,11 +92,17 @@ services:
       INPUT_DIR: /app/data/inputs
       RERANK_BINDING: "null"
     volumes:
-      - rag-data-estimate-v3:/app/data/rag_storage
+      - rag-data-estimate-v4:/app/data/rag_storage
       - rag-inputs:/app/data/inputs
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:9621/health',timeout=3)"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    logging: *logging
     restart: unless-stopped
 volumes:
   member-data:
   redis-data:
-  rag-data-estimate-v3:
+  rag-data-estimate-v4:
   rag-inputs:

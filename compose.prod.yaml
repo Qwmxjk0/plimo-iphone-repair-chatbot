@@ -1,0 +1,29 @@
+# VPS: docker compose -f compose.yaml -f compose.prod.yaml --profile rag up -d --build
+# Caddy is the only service with public ports; it gets and renews the TLS certificate.
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    restart: unless-stopped
+  api:
+    environment:
+      COOKIE_SECURE: "true"
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+volumes:
+  caddy-data:
+  caddy-config:

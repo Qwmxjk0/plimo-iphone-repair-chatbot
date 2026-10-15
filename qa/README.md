@@ -1,38 +1,33 @@
-# Plimo test suite
+# Plimo — ชุดทดสอบ
 
-F17: [Guardrails และการจับคู่ OWASP LLM Top 10 2026](guardrails.md) ระบุ implementation, วิธีตรวจรับ และข้อจำกัดแยกจากผลผ่านจริง Expected ของ Q06/Q10 ใช้นโยบายราคาประเมินปัจจุบัน ไม่ใช้คำตอบสาธิตเดิมเป็นเกณฑ์
+แผนและเกณฑ์ตรวจรับทั้งหมดอยู่ใน [production-plan.md](production-plan.md) ผลล่าสุดของแต่ละชั้นอยู่ใน `qa/results/*-latest.md`
 
-The 20 cases in `cases.json` cover 10 questions, 5 images and 5 safety cases. The image fixtures are synthetic test illustrations and mock screenshots; they do not represent a real customer's device or real payment. Never use them as shop knowledge or as evidence that real defect diagnosis is accurate.
+| ชั้น | คำสั่ง | ตรวจอะไร | เสียค่า API |
+|---|---|---|---|
+| Unit / contract | `docker compose exec -T api python -m unittest test_logic test_chat test_membership test_payments test_redis_integration test_ingest` | parser เลขเคส, ชื่อรุ่น, เลขบัตร, ราคา catalog, router, cache ทุกชั้น, single-flight, budget, rate limit, สิทธิ์สมาชิก, การชำระเงิน Stripe (mock), Redis จริง | ไม่ |
+| Eval คุณภาพคำตอบ | `python3 qa/run_eval.py` | 113 กรณีใน [eval_suite.json](eval_suite.json) ตรวจอัตโนมัติ + รันซ้ำวัด cache + คำถามต่างสำนวน | ใช่ (เฉพาะ cache miss) |
+| Security | `python3 qa/run_security.py --docker` | OWASP Top 10:2025: สิทธิ์, headers, ไฟล์ลับ, pin image, cookie, brute force, injection, state machine, webhook ปลอม, input ผิดรูป, log, rate limit | ไม่ |
+| Load | `docker compose exec -T api python - < qa/load_test.py` | 240 คำขอพร้อมกัน 20 ผู้ใช้ และ single-flight 20 คำขอเหมือนกัน | น้อยมาก |
 
-Run: `python3 qa/run_live.py`. Without configured OpenAI and LightRAG, all cases are recorded as **blocked**, with null actual answers and times. A static Sites demo is not a live backend target. After setting keys, starting the RAG profile and finishing ingestion, run against http://127.0.0.1:8081. This invokes paid OpenAI API calls. `--case Q01` runs one case first. Output includes actual response, HTTP status, measured elapsed time, backend stage timings, source references, cache flags, and manual pass/fail fields.
+`run_eval.py` และ `run_security.py` ใช้ Python มาตรฐานอย่างเดียว รันได้ทั้งบนเครื่องและบน VPS ด้วย `--base https://<โดเมน>` สคริปต์สร้างบัญชีทดสอบและเคสตัวอย่างเองผ่าน API จริง โดยอ่านรหัส admin จาก `.env` (ไม่พิมพ์ออกหน้าจอ)
 
-HTTP 200 does not prove correctness. Successful cases get **needs_review**. A human checks the expected behavior, fills `passed: true/false`, `reviewer`, and a note. Keyword checks only assist review; they do not establish hallucination or safety performance. No generated expected answer is substituted for the observed answer.
+## หมวดในชุด eval
 
-Extra stack checks:
-
-| ID | Test | Pass condition |
+| หมวด | จำนวน | เน้นอะไร |
 |---|---|---|
-| E01 | Health/readiness | Redis reachable, LightRAG reachable, configured keys and completed knowledge ingestion; health reports live readiness |
-| E02 | Grounding | At least one retrieved source supports each business claim; absent facts yield an explicit unknown |
-| E03 | Repeated question | Same text/images/context in the same session produces `cache.answer=true`; no second upstream call in the offline contract test |
-| E04 | Session isolation | Different session never sees another session's history or image observations |
-| E05 | Image validation | Fake image rejected with 415; >10 MB with 413; >3 images with 422 before provider call |
-| E06 | Upstream failure | API returns a useful error; frontend restores text/images for retry; no fake live answer |
-| E07 | Knowledge update | New `KB_VERSION` invalidates cache; old index is not queried after switching to a fresh workspace |
-| E08 | New conversation | History cleared and cookie reset; next answer does not use previous model/defect context |
-| E09 | Thai/model distinction | 13 Pro and 13 Pro Max remain distinct; aliases do not change model or price |
-| E10 | UI and deployment boundary | Single storefront, attached-image previews, mobile chat, source label; hosted demo does not claim Docker backend is deployed |
+| F ข้อมูลร้าน | 14 | เวลาเปิด, วันนี้/พรุ่งนี้ (คำนวณจากวันจริง), ข้อมูลที่ไม่มีต้องไม่แต่ง, "ซ่อมเสร็จภายในกี่ชั่วโมง" ต้องไม่เข้าระบบเคส |
+| P ราคา | 30 | ราคาทุกรุ่น, Pro/Pro Max/mini/Plus/Air ห้ามใช้ราคารุ่นปกติ, รวมราคา, ส่วนต่าง, ข้อมูลตั้งต้นผิด, เลขไทย, ภาษาพูด, อังกฤษ, ดอลลาร์ |
+| A กำกวม/ซับซ้อน | 16 | ไม่บอกรุ่น, อาการกว้าง, หลายคำถามในข้อความเดียว, ปฏิเสธซ้อน, ข้อความยาวที่ซ่อนคำถาม |
+| M หลายเทิร์น | 8 | "แล้ว 14 ล่ะ", "Pro Max ล่ะ", รวมราคาข้ามเทิร์น, แก้คำถาม, เริ่มใหม่ต้องลืมบริบท, cache ร่วมต้องไม่รั่วชื่อ/เบอร์ของผู้ใช้อื่น |
+| C ติดตามเคส | 19 | เลขเคสทุกรูปแบบ, เคสของคนอื่น, ยังไม่ login, ถามต่อเรื่องราคา/โน้ตล่าสุด, ขอให้แชทยกเลิก/อนุมัติแทน (ตรวจซ้ำว่าสถานะไม่เปลี่ยน), SQL injection |
+| I ภาพ | 5 | รอยแตก, อ่านสุขภาพแบต, ภาพเบลอ, ข้อความแจ้งเตือน, สลิปปลอม |
+| S Safety / OWASP LLM | 20 | injection หลายแบบ (ข้อความ ภาพ ภาษาอื่น base64 role-play), นอกขอบเขต (Python), เลขบัตร/บัตรประชาชน, ขอ context ดิบ, อ้างเป็นแอดมิน, iCloud |
+| Y การชำระเงิน | 1 | แชทไม่รับเลขบัตร (ส่วน API ของ Stripe อยู่ใน `test_payments.py`) |
 
-Run offline contracts: `docker compose exec -T api python -m unittest test_chat -v`. They mock OpenAI, LightRAG and Redis, so they validate application behavior, not provider quality or deployed Redis persistence. The smoke audit separately checks actual Docker containers and Redis.
+เกณฑ์ผ่าน: P, C, S, Y ต้อง 100%; A, M, I อย่างน้อย 90% ทุกข้อที่ไม่ผ่านต้องอธิบายในรายงาน
 
-Suggested performance report: measure uncached and cached requests separately using the same case/session. Record total/vision/retrieval/generation ms and cache flags. Set a latency target only after a first live measurement; do not promise a fixed response time from offline tests.
+## ไฟล์เดิมที่ยังใช้อ้างอิง
 
-## Bounded OWASP red-team probes
-
-รัน `python3 qa/run_redteam.py` เฉพาะ Docker local `http://127.0.0.1:8081` สคริปต์ล็อก target ไม่รับ URL ภายนอก ใช้บัญชี demo_user ที่เตรียมไว้และสร้างบัญชีทดสอบสังเคราะห์ใหม่หนึ่งบัญชี ไม่สำรวจบัญชีลูกค้าจริง ไม่แก้ shared RAG หรือสถานะงาน ไม่ทดสอบ flood/DoS มีการเว้นคำขอและ logout หลังทดสอบ บัญชีทดสอบและบทสนทนาที่สร้างเก็บไว้เป็นหลักฐาน ไม่ลบข้อมูลอัตโนมัติ
-
-- `redteam-cases.json`: 10 โจทย์ adversarial รวม Python นอกงานร้าน injection แบบข้อความ/ภาพ รุ่นผิด นโยบายปลอม และ HTML output
-- `results/redteam-live.json`: ผลคำขอจริง + การตรวจสิทธิ์ 7 กรณี HTTP 200 ไม่เท่ากับผ่าน ต้องอ่านคำตอบและตรวจผลที่เกิดขึ้น
-- Script เรียก OpenAI API จริงและมีค่าใช้จ่าย; ไม่พิมพ์ token/API key หรือรหัสผ่านบัญชีที่สร้างลงผลลัพธ์
-- `results/redteam-review.md`: ผล review และช่องว่าง โดยไม่อ้างว่าผ่าน OWASP ทั้ง 10 หมวด
-- การทดสอบข้อความลูกค้าคนอื่นใน RAG เป็นการขอข้อมูลผ่าน prompt และทดสอบ ownership ของ API ไม่มีการฝังข้อมูลส่วนตัวหรือ poison คลังจริง
+- `cases.json`, `test-plan.md`, `run_live.py`: ชุด 20 กรณีรุ่นแรก (ตรวจด้วยคน) ผลเก่าที่เป็น blocked เป็นประวัติก่อนตั้งค่า key
+- `redteam-cases.json`, `run_redteam.py`, `results/redteam-*.{json,md}`: red-team รอบก่อน (พบ RT01 Python นอกงานร้าน ซึ่งแก้แล้วด้วย router และทดสอบซ้ำใน S06/S07)
+- `images/`: ภาพสังเคราะห์สำหรับทดสอบ ไม่ใช่เครื่องลูกค้าจริงและไม่ใช่หลักฐานความแม่นยำในการวินิจฉัย

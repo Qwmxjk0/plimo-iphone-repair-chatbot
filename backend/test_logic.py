@@ -96,6 +96,17 @@ class RouterParseTests(unittest.TestCase):
         route = router.parse(raw, 'แล้ว 14 ล่ะ')
         self.assertEqual(route['intent'], 'shop_info'); self.assertEqual(route['standalone'], 'แล้ว 14 ล่ะ')
         self.assertEqual(route['models'], [('14', 'base')]); self.assertIsNone(route['case_ref']); self.assertIsNone(route['extra_question'])
+    def test_follow_up_keeps_carried_over_model_and_services(self):
+        raw = json.dumps({'intent': 'price', 'standalone': 'เปลี่ยนแบตเตอรี่และหน้าจอ iPhone 12 รวมราคาเท่าไหร่', 'models': [], 'services': ['screen'],
+                          'case_ref': None, 'case_topic': 'none', 'extra_question': None, 'needs_clarification': False, 'time_sensitive': False})
+        route = router.parse(raw, 'ถ้าเปลี่ยนจอด้วยรวมเท่าไหร่')
+        self.assertEqual(route['models'], [('12', 'base')]); self.assertEqual(set(route['services']), {'screen', 'battery'})
+        self.assertIn(3490, catalog.lookup(route['models'], route['services'])['allowed'])
+    def test_second_shop_question_is_not_dropped(self):
+        raw = json.dumps({'intent': 'shop_info', 'standalone': 'ร้านเปิดวันพุธไหม', 'models': [{'family': '12', 'variant': 'base'}], 'services': ['battery'],
+                          'case_ref': None, 'case_topic': 'none', 'extra_question': 'เปลี่ยนแบตเตอรี่ iPhone 12 ราคาเท่าไหร่', 'needs_clarification': False, 'time_sensitive': False})
+        route = router.parse(raw, 'ร้านเปิดวันพุธไหม แล้วเปลี่ยนแบต iPhone 12 เท่าไหร่')
+        self.assertIn('แบตเตอรี่ iPhone 12', route['standalone']); self.assertIn('วันพุธ', route['standalone']); self.assertIsNone(route['extra_question'])
     def test_rules_fallback(self):
         self.assertEqual(router.fallback('PLM12 ถึงไหน')['intent'], 'case')
         self.assertEqual(router.fallback('ซ่อมเสร็จภายในกี่ชั่วโมง')['intent'], 'shop_info')

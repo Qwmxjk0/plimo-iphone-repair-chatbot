@@ -32,6 +32,9 @@ def init_db():
         c.executescript("""
         CREATE TABLE IF NOT EXISTS case_quotes(id INTEGER PRIMARY KEY AUTOINCREMENT,case_id INTEGER NOT NULL REFERENCES cases(id),amount REAL NOT NULL,status TEXT NOT NULL CHECK(status IN ('pending','approved','rejected','superseded')),created REAL NOT NULL,decided REAL,decided_by TEXT REFERENCES users(id),member_note TEXT NOT NULL DEFAULT '');
         CREATE INDEX IF NOT EXISTS quotes_case ON case_quotes(case_id,id);
+        CREATE TABLE IF NOT EXISTS payments(id INTEGER PRIMARY KEY AUTOINCREMENT,case_id INTEGER NOT NULL REFERENCES cases(id),quote_id INTEGER NOT NULL REFERENCES case_quotes(id),user_id TEXT NOT NULL REFERENCES users(id),amount_satang INTEGER NOT NULL,currency TEXT NOT NULL DEFAULT 'thb',session_id TEXT UNIQUE,checkout_url TEXT,status TEXT NOT NULL CHECK(status IN ('pending','paid','expired','failed')),created REAL NOT NULL,updated REAL NOT NULL,paid_at REAL);
+        CREATE UNIQUE INDEX IF NOT EXISTS payments_one_paid_per_quote ON payments(quote_id) WHERE status='paid';
+        CREATE TABLE IF NOT EXISTS stripe_events(id TEXT PRIMARY KEY,type TEXT NOT NULL,received REAL NOT NULL);
         """)
         # Preserve existing waiting cases, adding a versioned quote once.
         c.execute("INSERT INTO case_quotes(case_id,amount,status,created) SELECT id,quoted_price,'pending',updated FROM cases WHERE status='awaiting_approval' AND quoted_price IS NOT NULL AND NOT EXISTS(SELECT 1 FROM case_quotes WHERE case_id=cases.id)")
@@ -143,10 +146,19 @@ class CaseBody(BaseModel):
     model:str=Field(min_length=3,max_length=80)
     issue:str=Field(min_length=5,max_length=2000)
     conversation_id:str|None=None
+def payments_enabled():
+    # Demo deployment: only Stripe test-mode keys are ever accepted.
+    return os.getenv('STRIPE_SECRET_KEY','').startswith('sk_test_')
+def payment_for(c,quote_id):
+    row=c.execute("SELECT status,amount_satang,paid_at FROM payments WHERE quote_id=? ORDER BY (status='paid') DESC,id DESC LIMIT 1",(quote_id,)).fetchone()
+    return {'status':row['status'],'amount':row['amount_satang']/100,'paid_at':row['paid_at']} if row else None
 def case_data(row):
     d=dict(row);d['reference']=f"PLM-{d['id']:05d}"
-    with db() as c:quote=c.execute('SELECT * FROM case_quotes WHERE case_id=? ORDER BY id DESC LIMIT 1',(d['id'],)).fetchone()
+    with db() as c:
+        quote=c.execute('SELECT * FROM case_quotes WHERE case_id=? ORDER BY id DESC LIMIT 1',(d['id'],)).fetchone()
+        d['payment']=payment_for(c,quote['id']) if quote else None
     d['quote']=dict(quote) if quote else None
+    d['can_pay']=bool(quote and quote['status']=='approved' and d['status'] not in ('cancelled','closed') and not (d['payment'] and d['payment']['status']=='paid'))
     next_steps=list(TRANSITIONS[d['status']])
     if d['status']=='awaiting_approval' and (not quote or quote['status']!='approved'):
         next_steps=[s for s in next_steps if s!='repairing']
@@ -168,7 +180,7 @@ def create_case(body:CaseBody,request:Request):
 def list_cases(request:Request):
     u=user(request)
     with db() as c:rows=c.execute('SELECT * FROM cases WHERE user_id=? ORDER BY id DESC LIMIT 100',(u['id'],)).fetchall()
-    return {'cases':[case_data(r) for r in rows]}
+    return {'cases':[case_data(r) for r in rows],'payments_enabled':payments_enabled()}
 @router.get('/member/cases/{cid}')
 def get_case(cid:int,request:Request):
     u=user(request)
@@ -209,6 +221,9 @@ def update_case(cid:int,body:CaseUpdate,request:Request):
         revising=row['status']=='awaiting_approval' and body.status=='awaiting_approval'
         if not revising and body.status not in TRANSITIONS[row['status']]:raise HTTPException(409,'สถานะเปลี่ยนไม่ได้ตามขั้นตอน กรุณาโหลดข้อมูลใหม่')
         quote=c.execute('SELECT * FROM case_quotes WHERE case_id=? ORDER BY id DESC LIMIT 1',(cid,)).fetchone()
+        if quote and body.status in ('awaiting_approval','cancelled') and c.execute("SELECT 1 FROM payments WHERE quote_id=? AND status='paid'",(quote['id'],)).fetchone():
+            # Refunds are out of scope: a paid quote cannot be replaced or cancelled here.
+            raise HTTPException(409,'เคสนี้ชำระเงินแล้ว ต้องคืนเงินผ่าน Stripe ก่อนจึงจะเปลี่ยนราคาหรือยกเลิกได้')
         now=time.time();price=body.quoted_price if body.quoted_price is not None else row['quoted_price']
         if body.status=='awaiting_approval':
             if price is None:raise HTTPException(422,'กรุณาระบุราคาเสนอให้ลูกค้าอนุมัติ')
@@ -272,7 +287,12 @@ def case_lines(item,events,topic):
     if topic=='pickup' and item['status']!='ready':lines.append('เมื่อซ่อมเสร็จ สถานะจะเปลี่ยนเป็น "พร้อมรับเครื่อง" ตรวจได้ในบัญชีหรือถามในแชทนี้ครับ')
     return lines
 def case_extra_lines(item,topic):
-    """Extension point for payment details; kept separate from case status."""
+    """Payment state from SQLite only; the chat never confirms a payment itself."""
+    p=item.get('payment')
+    if p and p['status']=='paid':return [f"การชำระเงิน: ชำระแล้ว {p['amount']:,.2f} บาท เมื่อ {thai_time(p['paid_at'])} (Stripe โหมดทดสอบ)"]
+    if item.get('can_pay'):
+        return ['การชำระเงิน: ยังไม่ชำระ — กดปุ่ม "ชำระเงิน" ใน บัญชี → งานซ่อมของฉัน (Stripe โหมดทดสอบ)' if payments_enabled() else 'การชำระเงิน: ยังไม่ชำระ ร้านยังไม่เปิดชำระเงินออนไลน์']
+    if topic=='payment':return ['การชำระเงิน: ชำระได้หลังอนุมัติใบเสนอราคาแล้วเท่านั้น']
     return []
 def case_answer(u,text,ref=None,topic='status'):
     """Case status straight from SQLite. Returns (answer, case id answered or None)."""

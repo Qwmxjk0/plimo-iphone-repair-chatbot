@@ -1,77 +1,67 @@
-# Plimo — Architecture ปัจจุบัน (10 ตุลาคม 2026)
+# Plimo — Architecture (15 ตุลาคม 2026)
 
-แผนภาพอ้างอิงระบบ Docker local ที่พอร์ต 8081 แยกข้อมูลสมาชิกออกจากคลังข้อมูลร้านที่ใช้ร่วมกันใน RAG
-
-![Architecture](stack-flow.png)
+แผนภาพนี้คือเวอร์ชันปัจจุบัน ภาพ `stack-flow.png` / `.svg` เป็นรุ่น 10 ตุลาคม 2026 ก่อนเพิ่ม router, การตรวจราคา, การชำระเงิน และ HTTPS
 
 ```mermaid
 flowchart LR
     subgraph Browser[เบราว์เซอร์]
-      Shop[เว็บร้านหน้าเดียวและแชทข้อความ / ภาพ]
-      User[สมาชิก: ประวัติแชท / ส่งเคส / ติดตามสถานะ]
-      Admin[Admin: จำนวนเคส / อ่านแชทที่แนบ / อัปเดตสถานะ]
+      Shop[เว็บร้าน + แชทข้อความ/ภาพ]
+      Member[สมาชิก: ประวัติ / เคส / อนุมัติราคา / ชำระเงิน]
+      AdminUI[Admin: เคส / ใบเสนอ / สถิติ]
     end
-    subgraph Docker[Docker local — 127.0.0.1:8081]
-      Web[Nginx: หน้าเว็บและ API proxy]
-      API[FastAPI: ตรวจบัญชี / role / เจ้าของข้อมูล]
-      Redis[Redis: แคชคำตอบ / ผลค้น / ภาพ / บริบท / จำกัดคำขอ]
-      RAG[LightRAG: graph / vector / ข้อความต้นฉบับ]
-      DB[(SQLite: สมาชิก / session / แชท / เคส / ประวัติสถานะ)]
-      Ingest[ingest.py: ข้อมูลร้านและราคาประเมินเบื้องต้น]
-      Storage[(Docker volumes)]
-      Web --> API
-      API <--> Redis
-      API <--> DB
-      API --> RAG
-      API --> CaseChat[ถามสถานะ: อ่านเคสสด / ไม่ใช้แคชคำตอบ]
-      CaseChat --> DB
-      Ingest --> RAG
-      RAG --> Storage
-      DB --> Storage
-      Redis --> Storage
+    subgraph VPS[Docker บน VPS]
+      Caddy[Caddy: HTTPS อัตโนมัติ + HSTS]
+      Nginx[nginx: static + CSP/headers + rate limit + real IP]
+      subgraph API[FastAPI]
+        Guard[Input guard: เลขบัตร / เลขบัตรประชาชน / injection]
+        Router[Router: intent, เลขเคส, รุ่น, บริการ, คำถามฉบับเต็ม]
+        Case[ตอบเคส/การชำระจาก SQLite]
+        Catalog[Catalog: ราคาตรงรุ่น + รวม/ส่วนต่าง]
+        Gen[Generation + Output validator]
+        Pay[Stripe Checkout / confirm / webhook]
+      end
+      Redis[(Redis: cache fast/router/answer/retrieval/vision, history, rate, lock, metrics)]
+      DB[(SQLite: สมาชิก, แชท, เคส, ใบเสนอ, การชำระ)]
+      RAG[LightRAG: shop.md + catalog]
     end
-    subgraph OpenAI[OpenAI API]
-      GPT[Responses: วิเคราะห์ภาพและสร้างคำตอบจากข้อมูลร้าน]
-      Index[Embeddings และการสกัด entity / relation]
-    end
-    Shop --> Web
-    User --> Web
-    Admin --> Web
-    API <--> GPT
-    RAG <--> Index
-    Facts[shop.md และรายการราคาประเมิน] --> Ingest
-    Site[chatgpt.site: หน้าเว็บตัวอย่าง static]
+    OpenAI[OpenAI Responses + Embeddings]
+    Stripe[Stripe test mode]
+    Shop & Member & AdminUI --> Caddy --> Nginx --> Guard --> Router
+    Router -->|case / payment| Case --> DB
+    Router -->|shop / price / advice| Catalog --> Gen
+    Router -->|shop / price / advice| RAG --> Gen
+    Router -->|นอกขอบเขต / ไม่ปลอดภัย| Fixed[ข้อความคงที่ ไม่เรียก generation]
+    Router <--> OpenAI
+    Gen <--> OpenAI
+    RAG <--> OpenAI
+    API <--> Redis
+    Pay <--> Stripe
+    Stripe -->|webhook ลงลายเซ็น| Pay
+    Pay --> DB
 ```
 
-## เส้นทางใช้งาน
+## เส้นทางของหนึ่งข้อความแชท
 
-1. **แชท:** หน้าเว็บ → FastAPI → เช็กแคช Redis → วิเคราะห์ภาพเมื่อมีภาพ → ค้นข้อมูลร้านผ่าน LightRAG → OpenAI ตอบตามแหล่งข้อมูล → บันทึกข้อความของสมาชิกใน SQLite และบริบทล่าสุดใน Redis
-2. **ดูประวัติ:** สมาชิก → FastAPI ตรวจเจ้าของ → SQLite → รายการบทสนทนา → เปิดข้อความเก่าในช่องแชทและคุยต่อได้
-3. **ส่งเคสจากแชท:** สมาชิกเลือกบทสนทนา → FastAPI ตรวจสิทธิ์ → สร้างเลข PLM-xxxxx พร้อม conversation_id ใน SQLite
-4. **อนุมัติราคา:** Admin ส่งใบเสนอ → สมาชิกยืนยันอนุมัติ/ปฏิเสธฉบับปัจจุบัน → เก็บผู้ตอบ เวลาและหมายเหตุ → Admin เริ่มซ่อมได้เมื่ออนุมัติราคาตรงกัน
-5. **Admin:** ตรวจ role → ดูเคสและแชทที่แนบ → อัปเดตสถานะ / ราคาเสนอ / หมายเหตุ → บันทึกเหตุการณ์ → สมาชิกเปิด timeline ของตัวเอง
+1. **Input guard** (โค้ดล้วน ไม่เสียค่า API): ซ่อนเลขบัตรและเลขบัตรประชาชน ถ้ามีเลขบัตรจะตอบเตือนทันทีโดยไม่ส่งต่อ, รูปแบบ injection ที่ชัดเจนตอบปฏิเสธทันที
+2. **Fast cache**: คำถามแรกของบทสนทนาที่ไม่มีภาพ ค้นด้วยข้อความที่ normalize แล้ว (คำลงท้าย, ชื่อรุ่น, เลขไทย) ถ้า hit ตอบภายในไม่กี่มิลลิวินาที
+3. **Router** (มี cache และ single-flight): ถ้าเป็นคำถามแรก LightRAG เริ่มค้นคู่ขนานไปเลย
+4. **เคส / การชำระ**: อ่าน SQLite สดทุกครั้ง ไม่ cache จำ "เคสที่กำลังคุย" เพื่อให้ถามต่อได้ ถ้ามีคำถามร้านปนมาด้วยจะตอบต่อท้าย
+5. **ร้าน / ราคา / คำแนะนำ**: แถวราคาจาก catalog + ข้อมูลจาก LightRAG + วันเวลา (ถ้าจำเป็น) → generation → validator ตรวจตัวเลขทุกตัวและเครื่องหมายข้อมูลภายใน → เก็บใน answer cache ร่วม
+6. **Metering**: นับ token จริงทุก call, ตรวจเพดานรายวันก่อนเรียก OpenAI ทุกครั้ง
 
-## Redis
+## Cache
 
-| ข้อมูล | อายุแคช |
-|---|---|
-| คำตอบ | 30 นาที |
-| ผลค้น RAG | 1 ชั่วโมง |
-| ผลวิเคราะห์ภาพ | 24 ชั่วโมง |
-| ข้อความล่าสุดในบทสนทนา | 24 ชั่วโมง |
+| ชั้น | Key | ใช้ร่วมข้ามผู้ใช้ | อายุ |
+|---|---|---|---|
+| fast | ข้อความคำถามแรกที่ normalize แล้ว | ใช่ | 12 ชม. |
+| router | ข้อความ + 2 เทิร์นล่าสุด + เคสที่คุยอยู่ | ใช่ (บริบทต้องเหมือนกัน) | 12 ชม. |
+| answer | คำถามฉบับเต็ม + intent + รุ่น/บริการ + เวอร์ชัน KB/prompt/model/catalog | ใช่ | 12 ชม. (คำถามเรื่องวันเวลา 10 นาที) |
+| retrieval | คำถามฉบับเต็ม + เวอร์ชัน KB | ใช่ | 12 ชม. |
+| vision / คำตอบที่มีภาพ | hash ภาพ + บทสนทนา | ไม่ | 24 ชม. / 30 นาที |
+| history, active case | บทสนทนา | ไม่ | 24 ชม. |
 
-คีย์แคชแบ่งตาม session / สมาชิกและบทสนทนา พร้อมเวอร์ชันคลังข้อมูลและ prompt ตามชนิดแคช Redis ยังใช้จำกัดคำขอและป้องกันคำขอใน session เดียวกันทำงานชนกัน
+ไม่ cache คำตอบเคส การชำระเงิน และข้อความที่มีข้อมูลอ่อนไหว คำตอบที่ cache ร่วมสร้างจากคำถามฉบับเต็มที่ตัดข้อมูลส่วนตัวแล้ว ไม่ใช้ history ดิบ
 
-## ขอบเขตปัจจุบัน
+## การชำระเงิน
 
-- สมาชิกดูประวัติและเคสของตัวเอง ข้อมูลส่วนตัวไม่ถูก ingest ลง RAG ร่วมกัน
-- Chatbot ตรวจคำถามสถานะเคสและอ่าน SQLite ตามเจ้าของบัญชีสดทุกครั้ง โดยไม่ใช้ GPT หรือ answer cache
-- สมาชิกอนุมัติหรือปฏิเสธใบเสนอราคาที่มีเลข revision ผ่านพอร์ทัล ราคาใหม่ต้องอนุมัติใหม่ก่อนเริ่มซ่อม
-- ประวัติแชทเก็บข้อความและจำนวนภาพ ไม่เก็บไฟล์ภาพถาวร
-- แค็ตตาล็อก 16 รายการใช้ราคาประเมินเบื้องต้น ราคาสุทธิต้องตรวจเครื่องและอนุมัติก่อนเริ่มงาน
-- ทดสอบ text RAG + OpenAI + answer cache จริงแล้ว ทดสอบคุณภาพภาพจริงครบชุดยังค้างอยู่
-- เว็บ chatgpt.site เป็น static preview ระบบสมาชิก เคส Redis LightRAG และ OpenAI backend ทำงานผ่าน Docker local
-
-ไฟล์ส่งออก: [PNG](stack-flow.png) · [SVG](stack-flow.svg) · [Flow เคส](member-case-flow.md) · [Flow RAG](rag-flow.md)
-
-สร้างภาพใหม่ได้ด้วย `python qa/build_architecture.py` โดยไม่เรียก API
+สมาชิกอนุมัติใบเสนอ → `POST /api/member/cases/{id}/checkout` (จำนวนเงินจาก DB, idempotency key) → หน้า Stripe Checkout → กลับมาที่ `/?payment=success` → `GET /api/member/payments/confirm` ดึง session จาก Stripe แล้วตรวจจำนวนเงิน สกุลเงิน และ metadata → บันทึกการชำระ + เหตุการณ์ในเคส; webhook `checkout.session.completed` ทำงานเดียวกันแบบ idempotent

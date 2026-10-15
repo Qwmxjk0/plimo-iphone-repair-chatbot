@@ -10,7 +10,7 @@ function render() {
     const number=document.createElement('span');number.className='slot-number';number.textContent='PLIMO / '+item.id.slice(5).padStart(2,'0');
     const illustration=document.createElement('img');illustration.className='catalog-illustration';illustration.loading='lazy';illustration.decoding='async';illustration.width=1448;illustration.height=1086;
     const asset=item.kind==='product'?'accessories':Number(item.id.slice(5))%2?'repair':'phone';
-    illustration.src='assets/'+asset+'.png';illustration.alt=item.kind==='product'?'ภาพการ์ตูนโทรศัพท์และอุปกรณ์ประกอบ':'ภาพการ์ตูนโทรศัพท์และเครื่องมือซ่อม';
+    illustration.src='assets/'+asset+'.webp';illustration.alt=item.kind==='product'?'ภาพการ์ตูนโทรศัพท์และอุปกรณ์ประกอบ':'ภาพการ์ตูนโทรศัพท์และเครื่องมือซ่อม';
     const label=document.createElement('span');label.className='art-placeholder-label';label.textContent='ภาพประกอบ';art.append(illustration,number,label);
     const body=document.createElement('div'); body.className='catalog-body';
     const available=item.confirmed||item.demo;

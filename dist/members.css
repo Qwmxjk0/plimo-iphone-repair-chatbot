@@ -58,3 +58,8 @@
 }
 
 .quote-state{font-size:11px!important;color:var(--green)!important}.quote-decision{display:grid;gap:10px;padding:14px;background:#f1f4ec;border-radius:10px;margin:12px 0}.quote-decision label{display:grid;gap:6px;font-size:12px}.quote-decision input,.quote-decision select{width:100%;font:inherit;padding:9px;border:1px solid var(--line);border-radius:7px;background:white}.quote-decision .member-hint{margin:0!important;font-size:11px!important}.quote-decision button{margin:0!important}
+
+.payment-paid{font-size:12px!important;color:var(--green)!important;font-weight:600}.pay-action{margin:10px 0 4px!important;background:#635bff!important;color:#fff!important;border-color:#635bff!important}.pay-action:disabled{opacity:.6}.payment-banner{margin:0 18px 12px;padding:10px 12px;border-radius:8px;background:#fff4e5;font-size:13px}.payment-banner.ok{background:#e9f6ec;color:#1d6b35}
+
+.admin-title{font-size:30px;margin:15px 0}
+.privacy-page{max-width:760px;margin:0 auto;padding:0 16px 40px;line-height:1.7}.privacy-page h2{font-size:18px;margin:22px 0 6px}.privacy-page ul{padding-left:20px}

@@ -1,0 +1,5 @@
+# Local development only (auto-loaded by `docker compose`): site on http://127.0.0.1:8081
+services:
+  web:
+    ports:
+      - "127.0.0.1:8081:80"

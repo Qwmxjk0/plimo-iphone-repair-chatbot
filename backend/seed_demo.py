@@ -31,4 +31,13 @@ def seed():
         c.execute('INSERT INTO demo_seed VALUES(?)',('members-v1',))
     print('Created 2 demo accounts, 3 example conversations, 8 example cases. No AI calls.')
 
-if __name__=='__main__':seed()
+def lock_demo_admin():
+    """Public servers: the demo admin password is in the repo, so replace it with a random one."""
+    import secrets
+    with m.db() as c:c.execute("UPDATE users SET password=? WHERE username='demo_admin'",(m.password_hash(secrets.token_urlsafe(32)),))
+    print('demo_admin locked; use ADMIN_USERNAME / ADMIN_PASSWORD from .env for admin access.')
+
+if __name__=='__main__':
+    import sys
+    seed()
+    if '--lock-admin' in sys.argv:lock_demo_admin()

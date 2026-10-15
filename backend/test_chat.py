@@ -54,7 +54,7 @@ class ChatSetup:
             patch.object(main, 'RAG_KEY', 'offline-test'),
             patch.object(main, 'cache', MemoryRedis()),
             patch.object(main.httpx, 'AsyncClient', lambda **kw: original_client(transport=self.transport, **kw)),
-            patch.object(main, '_http', None),
+            patch.object(main.net, '_client', None),
         ]
         for p in self.patches: p.start()
         self.client = TestClient(main.app)

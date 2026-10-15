@@ -39,6 +39,11 @@ async function showMember(tab='cases'){
          const submit=node('button','ยืนยันคำตอบ','member-action');submit.type='submit';form.append(submit);form.onsubmit=async e=>{e.preventDefault();submit.disabled=true;me.textContent='';try{await memberApi('/member/cases/'+c.id+'/quote-decision','POST',{quote_id:quote.id,decision:select.value,note:note.value});await showMember('cases');}catch(err){fail(err);submit.disabled=false;}};row.append(form);
        }else if(quote.status==='approved'&&c.status==='awaiting_approval')row.append(node('p','รอร้านเริ่มซ่อมตามราคาที่คุณอนุมัติ','member-hint'));
      }
+     if(c.payment?.status==='paid')row.append(node('p','ชำระแล้ว '+Number(c.payment.amount).toLocaleString('th-TH')+' บาท (Stripe โหมดทดสอบ)','payment-paid'));
+     else if(c.can_pay&&d.payments_enabled){
+       const pay=action('ชำระเงิน '+Number(c.quote.amount).toLocaleString('th-TH')+' บาท (โหมดทดสอบ)',async()=>{pay.disabled=true;me.textContent='';try{const r=await memberApi('/member/cases/'+c.id+'/checkout','POST');const u=new URL(r.url);if(u.protocol!=='https:'||u.hostname!=='checkout.stripe.com')throw new Error('ลิงก์ชำระเงินไม่ถูกต้อง');location.assign(u.href);}catch(err){fail(err);pay.disabled=false;}});
+       pay.classList.add('pay-action');row.append(pay,node('p','โหมดทดสอบ ไม่มีการตัดเงินจริง ใช้บัตรทดสอบ 4242 4242 4242 4242 วันหมดอายุในอนาคต และ CVC ใดก็ได้','member-hint'));
+     }
      const details=node('details','','case-history'),summary=node('summary','ประวัติสถานะ'),timeline=node('ol','','case-timeline');details.append(summary,timeline);let loaded=false;
      details.addEventListener('toggle',async()=>{if(!details.open||loaded)return;loaded=true;timeline.replaceChildren(node('li','กำลังโหลด…','member-hint'));try{const detail=await memberApi('/member/cases/'+c.id);timeline.replaceChildren();for(const ev of detail.events){const item=node('li'),line=node('div','','timeline-heading'),date=node('time',new Date(ev.created*1000).toLocaleString('th-TH'));date.dateTime=new Date(ev.created*1000).toISOString();line.append(node('strong',statusNames[ev.status]),date);item.append(line,node('p',ev.note));timeline.append(item);}}catch(e){loaded=false;timeline.replaceChildren(node('li','โหลดประวัติไม่สำเร็จ กรุณาปิดแล้วเปิดอีกครั้ง','member-hint'));fail(e);}});
      row.append(details);list.append(row);
@@ -58,3 +63,11 @@ document.querySelector('#member-open').onclick=async()=>{md.showModal();me.textC
 document.querySelector('#member-close').onclick=()=>md.close();
 memberApi('/auth/me').then(d=>{memberUser=d.user;updateMemberButton();}).catch(()=>{memberBackend=false;});
 window.addEventListener('message',event=>{if(event.origin===location.origin&&event.source===document.querySelector('#chat-frame')?.contentWindow&&event.data?.type==='plimo-case'){selectedConversation=event.data.conversation_id||null;md.showModal();memberUser?showMember('new'):authForm();}});
+
+// Return from Stripe Checkout: confirm on the server (never trust the redirect alone), then clean the URL.
+(async()=>{const q=new URLSearchParams(location.search),state=q.get('payment');if(!state)return;const sid=q.get('session_id');history.replaceState(null,'',location.pathname);md.showModal();me.textContent='';
+ try{memberUser=(await memberApi('/auth/me')).user;updateMemberButton();if(!memberUser){authForm();me.textContent='กรุณาเข้าสู่ระบบเพื่อดูผลการชำระเงิน';return;}
+  let message='ยกเลิกการชำระเงินแล้ว ชำระใหม่ได้ภายหลัง',ok=false;
+  if(state==='success'&&sid){const r=await memberApi('/member/payments/confirm?session_id='+encodeURIComponent(sid));ok=r.status==='paid';message=ok?'ชำระเงินสำเร็จ '+r.reference+' (โหมดทดสอบ)':'ยังไม่ได้รับการยืนยันการชำระเงิน กรุณาตรวจสอบอีกครั้งภายหลัง';}
+  await showMember('cases');mb.prepend(node('p',message,ok?'payment-banner ok':'payment-banner'));
+ }catch(e){fail(e);}})();
