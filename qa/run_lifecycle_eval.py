@@ -5,7 +5,7 @@
 
 Standard library only; reuses run_eval's HTTP client. Writes qa/results/lifecycle-latest.md.
 """
-import argparse, json, re, sys, uuid
+import time, argparse, json, re, sys, uuid
 from datetime import datetime
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -23,7 +23,13 @@ def main():
     member.request('POST', '/api/auth/register', {'username': f'life_{tag}', 'password': f'life-password-{tag}'})
     def say(text):
         form = {'text': text, **({'conversation_id': conv['id']} if conv.get('id') else {})}
-        status, data = member.request('POST', '/api/chat', form=form)
+        for _ in range(6):  # another suite (security K04) may have just used up this IP's per-minute chat limit
+            status, data = member.request('POST', '/api/chat', form=form)
+            if status != 429:
+                break
+            time.sleep(15)
+        if status != 200:
+            data = {**data, 'answer': f"HTTP {status}: {data.get('detail', '')}"}
         conv['id'] = data.get('conversation_id') or conv.get('id')
         return status, data
     def case(cid): return member.request('GET', f'/api/member/cases/{cid}')[1]['case']

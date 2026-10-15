@@ -1,4 +1,4 @@
-# ผลตรวจความปลอดภัย (OWASP Top 10:2025) — 2026-10-15 19:48
+# ผลตรวจความปลอดภัย (OWASP Top 10:2025) — 2026-10-15 22:55
 
 เป้าหมาย: `https://203-156-66-86.sslip.io` · **ผ่าน 51/51**
 
@@ -6,12 +6,12 @@
 |---|---|---|---|---|
 | A01 | W01 | IDOR: อ่านเคสคนอื่น | ผ่าน | HTTP 404 |
 | A01 | W01 | IDOR: ตัดสินใบเสนอของคนอื่น | ผ่าน | HTTP 404 |
-| A01 | W01 | IDOR: สร้าง checkout ของคนอื่น | ผ่าน | HTTP 503 |
+| A01 | W01 | IDOR: สร้าง checkout ของคนอื่น | ผ่าน | HTTP 404 |
 | A01 | W01 | IDOR: บทสนทนาที่ไม่ใช่ของตัวเอง | ผ่าน | HTTP 404 |
 | A01 | W02 | สิทธิ์ admin: /api/admin/cases | ผ่าน | member 403, guest 401 |
 | A01 | W02 | สิทธิ์ admin: /api/admin/metrics | ผ่าน | member 403, guest 401 |
 | A01 | W02 | สิทธิ์ admin: /api/admin/insights | ผ่าน | member 403, guest 401 |
-| A01 | W02 | สิทธิ์ admin: /api/admin/cases/30 | ผ่าน | member 403, guest 401 |
+| A01 | W02 | สิทธิ์ admin: /api/admin/cases/41 | ผ่าน | member 403, guest 401 |
 | A01 | W02 | สิทธิ์ admin: AI วิเคราะห์เคส | ผ่าน | member 403, guest 401 |
 | A01 | W13 | CSRF: POST ข้าม origin ถูกปฏิเสธ | ผ่าน | HTTP 403 |
 | A02 | W03 | CSP ไม่มี unsafe-inline/eval และห้าม frame จากเว็บอื่น | ผ่าน | default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis |
@@ -37,8 +37,8 @@
 | A03 | W05 | backend/Dockerfile base image pin เวอร์ชัน | ผ่าน | FROM python:3.12.15-slim |
 | A03 | W05 | Python dependency ล็อกเวอร์ชันตรงที่ทดสอบ | ผ่าน | requirements.lock |
 | A02 | W05 | API container ไม่รันเป็น root | ผ่าน |  |
-| A04 | W06 | cookie สมาชิก HttpOnly + SameSite=Strict | ผ่าน | plimo_member=4MQ7--K7AvEU3MneeNQa1TE5ouFKBHoXJ_uC3UH34KY; Ht |
-| A04 | W06 | cookie มี Secure บน HTTPS | ผ่าน | plimo_member=4MQ7--K7AvEU3MneeNQa1TE5ouFKBHoXJ_uC3UH34KY; Ht |
+| A04 | W06 | cookie สมาชิก HttpOnly + SameSite=Strict | ผ่าน | plimo_member=jfhZG8DI8ONxShcSYT9kJdJ3dMbr_j6ukukrt5xQ2E4; Ht |
+| A04 | W06 | cookie มี Secure บน HTTPS | ผ่าน | plimo_member=jfhZG8DI8ONxShcSYT9kJdJ3dMbr_j6ukukrt5xQ2E4; Ht |
 | A07 | W09 | ปฏิเสธรหัสผ่านสั้น | ผ่าน | HTTP 422 |
 | A07 | W09 | brute force บัญชีเดียวถูกล็อก | ผ่าน | 401,401,401,401,401,401,401,401,401,429,429 |
 | A07 | W09 | บัญชีอื่นจาก IP เดียวกันยังเข้าได้ (NAT ห้องเรียน) | ผ่าน | HTTP 200 |
@@ -47,8 +47,8 @@
 | A05 | W07 | frontend ไม่ใช้ innerHTML/eval กับข้อมูล | ผ่าน |  |
 | A06 | W08 | เริ่มซ่อมก่อนลูกค้าอนุมัติราคาไม่ได้ | ผ่าน | HTTP 409 |
 | A06 | W08 | อนุมัติใบเสนอเก่าไม่ได้ | ผ่าน | HTTP 409 |
-| A06 | W08 | ชำระก่อนอนุมัติไม่ได้ | ผ่าน | HTTP 503 |
-| A08 | W10 | webhook ลายเซ็นปลอมถูกปฏิเสธ | ผ่าน | HTTP 503 |
+| A06 | W08 | ชำระก่อนอนุมัติไม่ได้ | ผ่าน | HTTP 409 |
+| A08 | W10 | webhook ลายเซ็นปลอมถูกปฏิเสธ | ผ่าน | HTTP 400 |
 | A10 | W12 | ข้อความยาวเกินถูกปฏิเสธ | ผ่าน |  |
 | A10 | W12 | ไฟล์ที่ไม่ใช่ภาพถูกปฏิเสธ | ผ่าน |  |
 | A10 | W12 | ภาพใหญ่เกิน 10 MB ถูกปฏิเสธ | ผ่าน |  |

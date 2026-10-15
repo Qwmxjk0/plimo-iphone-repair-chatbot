@@ -77,8 +77,9 @@ if ! $COMPOSE exec -T api python ingest.py --ensure; then
   echo "         Fix the cause (usually OpenAI credit) and run deploy again."
 fi
 
-log "6/7 Demo data for reviewers (demo_admin is locked on public servers)"
-$COMPOSE exec -T api python seed_demo.py --lock-admin
+log "6/7 Demo data for reviewers (demo_admin locked unless DEMO_ADMIN_OPEN=true)"
+# demo_admin's password is in the repo: locked on public servers unless DEMO_ADMIN_OPEN=true (classroom demo).
+if grep -q '^DEMO_ADMIN_OPEN=true' .env; then $COMPOSE exec -T api python seed_demo.py --open-admin; else $COMPOSE exec -T api python seed_demo.py --lock-admin; fi
 
 log "7/7 Daily backups (03:17, keep 7 days)"
 install -m 755 deploy/backup.sh /usr/local/bin/plimo-backup

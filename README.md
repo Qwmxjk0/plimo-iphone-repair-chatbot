@@ -2,9 +2,7 @@
 
 เว็บร้านซ่อม iPhone หน้าเดียวพร้อมผู้ช่วยแชทภาษาไทย ตอบจากข้อมูลร้านจริง (LightRAG + OpenAI) รองรับข้อความและภาพ มีระบบสมาชิก ประวัติแชท เคสซ่อม การอนุมัติใบเสนอราคา และ**การชำระเงินผ่าน Stripe (โหมดทดสอบ)** พร้อมหน้า Admin
 
-> **บนเซิร์ฟเวอร์จริง (https://203-156-66-86.sslip.io, 15 ต.ค. 2026):** eval 123/123 (รวมภาพยาก 15 กรณี) · วงจรเคสด้วย AI 16/16 · security 51/51 · รูปแชทเก็บใน Cloudflare R2 แบบ private — [eval-vps.md](qa/results/eval-vps.md) · [lifecycle-vps.md](qa/results/lifecycle-vps.md) · [security-vps.md](qa/results/security-vps.md)
->
-> **ผลตรวจล่าสุด (15 ต.ค. 2026, Docker local + OpenAI/LightRAG จริง):** eval คุณภาพคำตอบ **113/113** · วงจรเคสเปิด→ปิดด้วย AI **16/16** · RAG retrieval hit@3 **100%** (MRR 0.94) · unit/contract **91/91** · security OWASP Top 10:2025 **51/51** · โหลด 20 ผู้ใช้พร้อมกัน p95 **96 ms** (cache) · ค่า AI ต่อคำตอบใหม่ ≈ **$0.0028** — รายละเอียดใน [qa/results/](qa/results/)
+> **บนเซิร์ฟเวอร์จริง (https://203-156-66-86.sslip.io, 15 ต.ค. 2026):** eval คุณภาพคำตอบ **143/143** · API ครบ **24/24 endpoint** (33/33 checks) · สุ่มกติกา ต้องทำ/ห้ามทำ **33/33** · RAG hit@3 **98%** · security OWASP **51/51** · วงจรเคสเปิด→ปิดด้วย AI **16/16** · ชำระเงิน Stripe (test) จริง ✅ · unit **101/101** — **สรุปสำหรับส่งอาจารย์: [qa/results/SUMMARY.md](qa/results/SUMMARY.md)** · เนื้อหานำเสนอ: [qa/presentation.md](qa/presentation.md)
 
 ## เปิดใช้งาน
 
@@ -107,12 +105,17 @@ docker compose exec api python seed_demo.py
 
 | ชั้น | ผลล่าสุด | รายงาน |
 |---|---|---|
-| Unit / contract (mock OpenAI/LightRAG/Stripe, Redis จริง) | 91/91 ผ่าน | [unit-latest.md](qa/results/unit-latest.md) |
-| Eval คุณภาพคำตอบกับ OpenAI + LightRAG จริง | **113/113** — ราคา 30/30, ติดตามเคส 19/19, safety/OWASP LLM 20/20, กำกวม 16/16, ข้อมูลร้าน 14/14, หลายเทิร์น 8/8, ภาพ 5/5, ชำระเงิน 1/1 | [eval-latest.md](qa/results/eval-latest.md) |
-| RAG retrieval (26 คำถาม มีแหล่งที่ถูกต้องกำกับ) | hit@1 88%, hit@3 100%, MRR 0.94 (ก่อนจูน 31% / 96% / 0.63) | [retrieval-latest.md](qa/results/retrieval-latest.md) |
-| วงจรเคสเปิด→ปิดด้วย AI จริง (ลูกค้า + แอดมิน) | 16/16 ขั้น | [lifecycle-latest.md](qa/results/lifecycle-latest.md) |
-| Security OWASP Top 10:2025 (A01–A10) | 51/51 ผ่าน | [security-latest.md](qa/results/security-latest.md) |
+| Unit / contract (mock OpenAI/LightRAG/Stripe, Redis จริง) | 101/101 ผ่าน | [unit-latest.md](qa/results/unit-latest.md) |
+| Eval คุณภาพคำตอบกับ OpenAI + LightRAG จริง (บน VPS) | **143/143** — ข้อมูลร้าน 14, ราคา 30, กำกวม 16, หลายเทิร์น 8, ติดตามเคส 19, ภาพ 15, safety/OWASP LLM 20, ชำระเงิน 1, คลังความรู้ 20 | [eval-vps.md](qa/results/eval-vps.md) |
+| API ครบทุก endpoint (บน VPS) | 24/24 endpoint · 33/33 checks รวมสิทธิ์ 401/403/404 และ Stripe | [api-check-vps.md](qa/results/api-check-vps.md) |
+| สุ่มกติกา ต้องทำ/ห้ามทำ จาก system prompt (บน VPS) | 33/33 (17 กติกา, seed 2026) | [prompt-rules-vps.md](qa/results/prompt-rules-vps.md) |
+| RAG retrieval (40 คำถาม มีแหล่งที่ถูกต้องกำกับ) | hit@1 72%, hit@3 98%, hit@5 100%, MRR 0.85 (คลัง 53 หัวข้อ; ก่อนจูน hit@1 31%) | [retrieval-vps.md](qa/results/retrieval-vps.md) |
+| วงจรเคสเปิด→ปิดด้วย AI จริง (ลูกค้า + แอดมิน, บน VPS) | 16/16 ขั้น | [lifecycle-vps.md](qa/results/lifecycle-vps.md) |
+| Security OWASP Top 10:2025 (A01–A10, บน VPS) | 51/51 ผ่าน | [security-vps.md](qa/results/security-vps.md) |
+| ชำระเงินจริงผ่าน Stripe (test mode) | จ่ายสำเร็จ 3,200 บาท, webhook ส่งถึงทุก event | [stripe-payment-vps.md](qa/results/stripe-payment-vps.md) |
 | Load / performance | ดูหัวข้อถัดไป | [load-latest.md](qa/results/load-latest.md) |
+
+**รอบเย็น (คลังความรู้ ~6 หน้า + ชุดทดสอบใหม่):** เพิ่มเอกสาร 4 ไฟล์และหมวด K 20 กรณี เจอ router ส่งคำถาม "สถานะนี้หมายถึงอะไร / ส่งรูปกี่รูป / ใครเห็นรูป" ผิดทาง (ไปเคส/นอกขอบเขต/ไม่ปลอดภัย) → แก้ router; เครดิต OpenAI หมดกลางรอบทำให้คลังล้มทั้งหมด → ทำ `ingest --ensure` ให้ deploy ซ่อมเองและไม่จ่ายซ้ำ; คำตอบมีคำว่า "ผม" และถามวันที่ → แก้ prompt; รอบสุดท้ายบน VPS 143/143 (K17 ตรวจคะแนนซ้ำเพราะตอบ "ยืนยันไม่ได้" ซึ่งความหมายเดียวกับเกณฑ์ บันทึกในรายงาน) ข้อที่ยังแปรปรวนได้คือคำถามต่อเนื่องหลายเทิร์นบางแบบ
 
 ประวัติการรันวันนี้ (เก็บไฟล์ไว้ทุกรอบ): รอบแรก 111/113 พบ A14 (ขอส่วนลดถูกจัดเป็นคำสั่งไม่ปลอดภัย) และ M03 (รวมราคาข้ามเทิร์นหาย) → แก้ router; รอบถัดมาพบ A05 (คำถามที่สองในข้อความเดียวหาย) → แก้ router และ F11 ตัวตรวจนับ "ไม่รับซ่อม Samsung" เป็นคำตอบผิด → เปลี่ยนเป็นตัวตรวจที่เข้าใจคำปฏิเสธ; รอบ 08:28 ถูก rate limit ต่อ IP ของระบบเองตัดหลังกรณีที่ 75 จึงปรับค่าเริ่มต้นเป็น 1,200 ข้อความ/ชม./IP สำหรับห้องเรียนที่ใช้ NAT เดียวกัน แล้วรันใหม่ทั้งชุด
 

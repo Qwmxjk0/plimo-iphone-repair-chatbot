@@ -37,7 +37,15 @@ def lock_demo_admin():
     with m.db() as c:c.execute("UPDATE users SET password=? WHERE username='demo_admin'",(m.password_hash(secrets.token_urlsafe(32)),))
     print('demo_admin locked; use ADMIN_USERNAME / ADMIN_PASSWORD from .env for admin access.')
 
+DEMO_ADMIN_PASSWORD='PlimoAdminDemo2026!'
+
+def open_demo_admin():
+    """Classroom demo: give demo_admin the documented password again (DEMO_ADMIN_OPEN=true)."""
+    with m.db() as c:c.execute("UPDATE users SET password=? WHERE username='demo_admin'",(m.password_hash(DEMO_ADMIN_PASSWORD),))
+    print('demo_admin open with the documented password (qa/member-demo.md).')
+
 if __name__=='__main__':
     import sys
     seed()
-    if '--lock-admin' in sys.argv:lock_demo_admin()
+    if '--open-admin' in sys.argv:open_demo_admin()
+    elif '--lock-admin' in sys.argv:lock_demo_admin()
