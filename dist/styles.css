@@ -6,3 +6,5 @@
 .chat-case-button{display:block;margin:8px auto 0;border:1px solid #d4ddce;border-radius:8px;background:#e8eddc;color:#38654b;padding:7px 13px;font:inherit;font-size:11px;cursor:pointer}
 
 .chat-case-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}.chat-case-actions .chat-case-button{margin:8px 0 0}
+
+.action-bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}

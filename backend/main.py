@@ -21,6 +21,8 @@ from fastapi.responses import JSONResponse
 from PIL import Image, ImageOps, UnidentifiedImageError
 from redis.asyncio import Redis
 
+import actions
+import assist
 import catalog
 import membership
 import net
@@ -378,18 +380,43 @@ async def answer_question(route, processed, hashes, session, hits, timings, spec
 def fixed(kind):
     return {"answer": REPLIES[kind], "sources": [], "rag_used": False, "case_used": False}
 
-async def case_reply(member, text, route, session, hits, timings):
-    """Case and payment answers come from SQLite only and are never cached."""
-    if route["intent"] == "payment" and not route.get("case_ref"):
+async def propose(result, pending, session):
+    if pending:
+        await put_cache("pending:" + session, pending, actions.PENDING_TTL)
+        result["pending"] = {"label": actions.describe(pending)}
+    return result
+
+async def case_reply(member, text, route, session, hits, timings, history=(), base="", cid=None, active=None):
+    """Case and payment answers come from SQLite only and are never cached. Actions are proposals."""
+    topic = route.get("case_topic") or "status"
+    ref = route.get("case_ref") or (active if topic in ("approve", "reject", "pay") else None)
+    owned = [{"label": "member-cases", "id": "owned"}] if member else []
+    if topic == "open":
+        answer, pending = actions.propose_open(member, route, text, history)
+        result = await propose({"answer": answer, "sources": owned, "rag_used": False, "case_used": bool(member)}, pending, session)
+    elif topic in ("approve", "reject"):
+        answer, pending = actions.propose_quote(member, ref, "approve" if topic == "approve" else "reject")
+        if pending:
+            await cache.set("active_case:" + session, ref, ex=HISTORY_TTL)
+        result = await propose({"answer": answer, "sources": owned, "rag_used": False, "case_used": bool(member)}, pending, session)
+    elif topic == "pay" and member and ref and payments_enabled():
+        try:
+            url = await payments.create_checkout(member, ref, base)
+            answer = f"กดปุ่มด้านล่างเพื่อไปหน้าชำระเงินของ Stripe สำหรับเคส PLM-{ref:05d} ครับ (โหมดทดสอบ ไม่มีการตัดเงินจริง) แชทไม่รับเลขบัตร กรอกบนหน้าของ Stripe เท่านั้น"
+            result = {"answer": answer, "sources": owned, "rag_used": False, "case_used": True, "checkout_url": url}
+        except HTTPException as exc:
+            answer, _ = membership.case_answer(member, text, ref, "payment")
+            result = {"answer": f"ยังชำระเคสนี้ไม่ได้ครับ: {exc.detail}\n\n{answer}", "sources": owned, "rag_used": False, "case_used": True}
+    elif route["intent"] == "payment" and not ref:
         note = REPLIES["payment"] if payments_enabled() else REPLIES["payment_off"]
         result = {"answer": note + ("" if member else " หากต้องการชำระค่าซ่อม กรุณาเข้าสู่ระบบก่อนครับ"), "sources": [], "rag_used": False, "case_used": False}
     else:
-        answer, case_id = membership.case_answer(member, text, route.get("case_ref"), route.get("case_topic") or "status")
+        answer, case_id = membership.case_answer(member, text, ref, topic if topic != "pay" else "payment")
         if route["intent"] == "payment" and member:
             answer += "\n\n" + (REPLIES["payment"] if payments_enabled() else REPLIES["payment_off"])
         if case_id:
             await cache.set("active_case:" + session, case_id, ex=HISTORY_TTL)
-        result = {"answer": answer, "sources": [{"label": "member-cases", "id": "owned"}] if member else [], "rag_used": False, "case_used": bool(member)}
+        result = {"answer": answer, "sources": owned, "rag_used": False, "case_used": bool(member)}
     extra = route.get("extra_question")
     if extra and OPENAI_KEY and RAG_KEY:
         sub = {"intent": "shop_info", "standalone": extra, "models": nlu.extract_models(extra), "services": nlu.extract_services(extra),
@@ -403,13 +430,34 @@ async def case_reply(member, text, route, session, hits, timings):
             result["answer"] += "\n\n" + str(exc.detail)
     return result
 
-async def respond(safe_text, flags, uploads, history, session, member, hits, timings):
+async def confirm_pending(safe_text, uploads, session, member, cid):
+    """A stored proposal runs only on an explicit confirmation; any other message drops it."""
+    pending = await get_cache("pending:" + session) if member else None
+    if not pending:
+        return None
+    await cache.delete("pending:" + session)
+    done = {"sources": [{"label": "member-cases", "id": "owned"}], "rag_used": False, "case_used": True, "route": "action"}
+    if actions.CONFIRM.match(safe_text) and not uploads:
+        answer, case_id = actions.execute(member, pending, cid)
+        if case_id:
+            await cache.set("active_case:" + session, case_id, ex=HISTORY_TTL)
+        await count(action_done=1)
+        logger.info("chat_action type=%s ok=%s", pending["type"], bool(case_id))
+        return {"answer": answer, **done}
+    if actions.DECLINE.match(safe_text):
+        return {"answer": "ยกเลิกรายการที่รอยืนยันแล้วครับ ไม่มีการเปลี่ยนแปลงใด ๆ ในบัญชีของคุณ", **done}
+    return None
+
+async def respond(safe_text, flags, uploads, history, session, member, hits, timings, base="", cid=None):
     if "card" in flags:
         await count(guard_card=1)
         return {**fixed("card"), "route": "guard_card"}
     if "injection" in flags:
         await count(guard_injection=1)
         return {**fixed("unsafe"), "route": "unsafe"}
+    confirmed = await confirm_pending(safe_text, uploads, session, member, cid)
+    if confirmed:
+        return confirmed
     processed = []
     for upload in uploads:
         processed.append(clean_image(await upload.read(MAX_IMAGE + 1)))
@@ -418,7 +466,7 @@ async def respond(safe_text, flags, uploads, history, session, member, hits, tim
         route = router.fallback(safe_text)
         if route["intent"] != "case" or processed:
             raise HTTPException(503, "ยังไม่ได้ตั้งค่าผู้ช่วย AI กรุณาใช้ตัวอย่างหน้าเว็บก่อน")
-        return {**await case_reply(member, safe_text, route, session, hits, timings), "route": "case"}
+        return {**await case_reply(member, safe_text, route, session, hits, timings, history, base, cid), "route": "case"}
     first_turn = not history and not processed
     fast_key = None
     if first_turn and not flags:
@@ -443,10 +491,11 @@ async def respond(safe_text, flags, uploads, history, session, member, hits, tim
             await count(**{"route_" + intent: 1})
             result = fixed(intent)
         elif intent in ("case", "payment"):
-            result = await case_reply(member, safe_text, route, session, hits, timings)
+            result = await case_reply(member, safe_text, route, session, hits, timings, history, base, cid, int(active) if active else None)
             fast_key = None
         else:
             result = await answer_question(route, processed, hashes, session, hits, timings, spec)
+            result["_q"] = route["standalone"]
     finally:
         if spec is not None and not spec.done():
             spec.cancel()
@@ -469,6 +518,20 @@ async def enforce_rate(request, session, member):
         if used > limit:
             await count(rate_limited=1)
             raise HTTPException(429, "ส่งคำถามบ่อยเกินไป กรุณาลองใหม่ภายหลัง")
+
+GAP = re.compile(r'ยังไม่มีข้อมูล|ไม่มีข้อมูลยืนยัน|ขอยืนยันรายละเอียดเพิ่มเติม|ยังไม่พบข้อมูล')
+
+async def log_question(result):
+    """Daily question log for admin insights: route + the router's cleaned question only (no raw text)."""
+    question = result.pop("_q", "") or ""
+    try:
+        key = "qlog:" + day()
+        entry = {"r": result.get("route"), "q": question[:200], "gap": bool(question and GAP.search(result.get("answer", ""))), "t": int(time.time())}
+        await cache.rpush(key, json.dumps(entry, ensure_ascii=False))
+        await cache.ltrim(key, -3000, -1)
+        await cache.expire(key, 8 * 86400)
+    except Exception as exc:
+        logger.warning("question_log_unavailable type=%s", type(exc).__name__)
 
 @app.get("/api/health")
 async def health():
@@ -524,8 +587,9 @@ async def chat(request: Request, response: Response, text: Annotated[str, Form()
                 hits["answer"] = True
                 await count(repeat_hit=1)
             else:
-                result = await respond(safe_text, flags, images, history, session, member, hits, timings)
+                result = await respond(safe_text, flags, images, history, session, member, hits, timings, payments.base_url(request), cid)
             result.pop("cacheable", None)
+            await log_question(result)
             reuse = bool(result.pop("reuse", False))
             if not repeated:
                 history = history + [{"role": "user", "content": user_content},
@@ -554,6 +618,55 @@ async def admin_metrics(request: Request):
     for d in days:
         data[d] = {k: int(v) for k, v in (await cache.hgetall("metrics:" + d)).items()}
     return {"days": data, "daily_budget_usd": DAILY_BUDGET_USD, "daily_token_budget": DAILY_TOKEN_BUDGET}
+
+@app.post("/api/admin/cases/{cid}/assist")
+async def admin_assist(cid: int, request: Request):
+    """AI suggestion for one case. Advice only: the admin applies it through the normal update form."""
+    membership.admin(request)
+    with membership.db() as c:
+        row = c.execute('SELECT * FROM cases WHERE id=?', (cid,)).fetchone()
+        if not row:
+            raise HTTPException(404, 'ไม่พบเคส')
+        events = [dict(e) for e in c.execute('SELECT status,note,created FROM case_events WHERE case_id=? ORDER BY id', (cid,)).fetchall()]
+        messages = [dict(m) for m in c.execute('SELECT role,content FROM messages WHERE conversation_id=? ORDER BY id', (row['conversation_id'],)).fetchall()] if row['conversation_id'] else []
+    item = membership.case_data(row)
+    data, facts = assist.payload(item, events, messages)
+    key = "assist:" + digest([assist.VERSION, MODEL, CATALOG_VERSION, data])
+    found = await get_cache(key)
+    if found is not None:
+        return {**found, "hints": assist.hints(item, events), "cached": True}
+    if not OPENAI_KEY:
+        return {"summary": "", "missing_info": [], "suggested_status": None, "suggested_price": None, "quote_items": [], "customer_note": "",
+                "reason": "", "warnings": ["ยังไม่ได้ตั้งค่า AI"], "hints": assist.hints(item, events), "cached": False}
+    raw = await llm(assist.INSTRUCTIONS, [{"type": "input_text", "text": json.dumps(data, ensure_ascii=False)}], model=MODEL, max_tokens=900,
+                    schema=assist.SCHEMA, cache_key="plimo-assist-v1")
+    result = assist.validate(raw, item, facts, LEAK)
+    await count(admin_assist=1, **({"assist_warning": len(result["warnings"])} if result["warnings"] else {}))
+    await put_cache(key, result, 3600)
+    return {**result, "hints": assist.hints(item, events), "cached": False}
+
+@app.get("/api/admin/insights")
+async def admin_insights(request: Request):
+    """Today's de-identified question statistics plus AI recommendations for the owner."""
+    membership.admin(request)
+    entries = []
+    for raw in await cache.lrange("qlog:" + day(), 0, -1):
+        try:
+            entries.append(json.loads(raw))
+        except ValueError:
+            continue
+    stats = assist.insight_stats(entries)
+    advice, key = "", "insight:" + digest([assist.VERSION, MODEL, stats])
+    if stats["total"] and OPENAI_KEY:
+        advice = await get_cache(key)
+        if advice is None:
+            try:
+                advice = await llm(assist.INSIGHT_INSTRUCTIONS, [{"type": "input_text", "text": json.dumps(stats, ensure_ascii=False)}], model=MODEL, max_tokens=500, cache_key="plimo-insight-v1")
+                advice = "" if LEAK.search(advice) else advice
+                await put_cache(key, advice, 1800)
+            except HTTPException as exc:
+                advice = str(exc.detail)
+    return {**stats, "advice": advice or ""}
 
 @app.get('/api/ready')
 async def readiness():

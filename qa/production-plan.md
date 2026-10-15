@@ -234,4 +234,5 @@ flowchart LR
 | VPS kit | เสร็จ (ตรวจ config แล้ว) | `deploy/`; deploy จริงรอ VPS |
 | Security + load test | เสร็จ | `qa/results/security-latest.md`, `qa/results/load-latest.md` |
 | จูน RAG retrieval (chunk เฉพาะรายการ, แยกหัวข้อ, naive) | เสร็จ | hit@1 31% → 88%, `qa/results/retrieval-latest.md`, eval 113/113 |
+| วงจรเคสเปิด→ปิดด้วย AI + AI ช่วยแอดมิน + insight | เสร็จ | `actions.py`, `assist.py`, lifecycle 16/16, `test_actions` |
 | README/เอกสารสำหรับผู้ตรวจ | เสร็จ | `README.md`, `qa/README.md`, `qa/guardrails.md` |

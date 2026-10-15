@@ -89,7 +89,9 @@ def lookup(models, services):
         for service in price_services:
             for item in [i for i in catalog if i['service'] == service]:
                 rows.append(f"{item['name']}: ราคาประเมินเบื้องต้นเริ่มต้น {baht(item['price'])} (รองรับ {item['coverage']})")
-                allowed.add(item['price'])
+        # No model named: any real catalog price may be mentioned (service words like "หน้าจอ"
+        # also appear in non-repair questions); the strict per-model check applies once a model is known.
+        allowed.update(i['price'] for i in catalog)
         if any(s in ('screen', 'battery') for s in price_services):
             rows.append('ราคาหน้าจอและแบตเตอรี่ขึ้นกับรุ่น ถ้าลูกค้ายังไม่บอกรุ่น ให้ถามรุ่นเต็มก่อน และห้ามเลือกรุ่นให้เอง')
     elif valid_models:

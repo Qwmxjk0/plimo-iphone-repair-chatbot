@@ -26,6 +26,9 @@ class ScopedRedis:
     async def hincrby(self,k,f,n):return await self.redis.hincrby(self.prefix+k,f,n)
     async def hget(self,k,f):return await self.redis.hget(self.prefix+k,f)
     async def hgetall(self,k):return await self.redis.hgetall(self.prefix+k)
+    async def rpush(self,k,v):return await self.redis.rpush(self.prefix+k,v)
+    async def ltrim(self,k,a,b):return await self.redis.ltrim(self.prefix+k,a,b)
+    async def lrange(self,k,a,b):return await self.redis.lrange(self.prefix+k,a,b)
 
 class RedisIntegration(test_chat.ChatTests):
     # Reuse provider contract tests with real Redis instead of MemoryRedis.

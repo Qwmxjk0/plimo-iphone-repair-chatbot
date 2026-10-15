@@ -28,6 +28,8 @@ flowchart LR
     Stripe[Stripe test mode]
     Shop & Member & AdminUI --> Caddy --> Nginx --> Guard --> Router
     Router -->|case / payment| Case --> DB
+    Case -->|เสนอเปิดเคส/อนุมัติ| Pending[ข้อเสนอรอยืนยัน 10 นาที] -->|ลูกค้ากดยืนยัน| DB
+    AdminUI -->|AI วิเคราะห์เคส / insight| Assist[Admin AI: สรุป แนะนำสถานะ ราคา หมายเหตุ] --> OpenAI
     Router -->|shop / price / advice| Catalog --> Gen
     Router -->|shop / price / advice| RAG --> Gen
     Router -->|นอกขอบเขต / ไม่ปลอดภัย| Fixed[ข้อความคงที่ ไม่เรียก generation]

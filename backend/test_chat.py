@@ -10,7 +10,7 @@ from PIL import Image
 import main
 
 class MemoryRedis:
-    def __init__(self): self.values = {}; self.hashes = {}
+    def __init__(self): self.values = {}; self.hashes = {}; self.lists = {}
     async def get(self, key): return self.values.get(key)
     async def set(self, key, value, ex=None, nx=False):
         if nx and key in self.values: return False
@@ -33,6 +33,9 @@ class MemoryRedis:
         value = self.hashes.get(key, {}).get(field)
         return None if value is None else str(value)
     async def hgetall(self, key): return {k: str(v) for k, v in self.hashes.get(key, {}).items()}
+    async def rpush(self, key, value): self.lists.setdefault(key, []).append(value); return len(self.lists[key])
+    async def ltrim(self, key, start, end): self.lists[key] = self.lists.get(key, [])[start:(None if end == -1 else end + 1)]
+    async def lrange(self, key, start, end): return self.lists.get(key, [])[start:(None if end == -1 else end + 1)]
 
 def route_json(text, **override):
     route = {'intent': 'shop_info', 'standalone': text, 'models': [], 'services': [], 'case_ref': None, 'case_topic': 'none',

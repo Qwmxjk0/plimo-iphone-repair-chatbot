@@ -122,8 +122,25 @@ async function submit() {
     if (turn !== generation) return;
     loading.remove(); const reply = message('assistant', result.answer);
     const source = document.createElement('p'); source.className = 'message-source';
-    source.textContent = result.case_used ? 'อ้างอิง: เคสของบัญชีคุณ · อ่านสถานะล่าสุดจากระบบ' : live ? (result.sources.length ? 'อ้างอิง: '+[...new Set(result.sources.map(s=>s.label.endsWith('shop.md')?'ข้อมูลร้าน Plimo':s.label.includes('slot-')?'รายการและราคาประเมิน':'เอกสารอ้างอิง'))].join(' · ') : 'ยังไม่พบข้อมูลที่ยืนยัน') : 'คำตอบอัตโนมัติ · ผู้ช่วย AI ยังไม่เชื่อมต่อ';
+    source.textContent = result.case_used ? 'อ้างอิง: เคสของบัญชีคุณ · อ่านสถานะล่าสุดจากระบบ' : live ? (result.sources.length ? 'อ้างอิง: '+[...new Set(result.sources.map(s=>/shop(-\d+)?\.md$/.test(s.label)?'ข้อมูลร้าน Plimo':s.label.includes('slot-')?'รายการและราคาประเมิน':'เอกสารอ้างอิง'))].join(' · ') : 'ยังไม่พบข้อมูลที่ยืนยัน') : 'คำตอบอัตโนมัติ · ผู้ช่วย AI ยังไม่เชื่อมต่อ';
     reply.append(source);
+    // Case actions are proposals: the member confirms with a separate message, never automatically.
+    if (result.pending) {
+      const bar = document.createElement('div'); bar.className = 'action-bar';
+      for (const [label, reply_] of [['ยืนยัน: ' + result.pending.label, 'ยืนยัน'], ['ยกเลิก', 'ยกเลิก']]) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'suggestion'; b.textContent = label;
+        b.onclick = () => { if (busy) return; bar.remove(); input.value = reply_; update(); submit(); };
+        bar.append(b);
+      }
+      reply.append(bar);
+    }
+    if (result.checkout_url) {
+      const url = new URL(result.checkout_url);
+      if (url.protocol === 'https:' && url.hostname === 'checkout.stripe.com') {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'suggestion'; b.textContent = 'ไปหน้าชำระเงิน (Stripe โหมดทดสอบ)';
+        b.onclick = () => window.top.location.assign(url.href); reply.append(b);
+      }
+    }
   } catch (err) {
     if (turn !== generation) return;
     loading.remove(); input.value=text; files=images; renderAttachments();

@@ -165,17 +165,20 @@ def case_data(row):
     if d['status']=='awaiting_approval':next_steps.insert(0,'awaiting_approval')
     d['allowed_transitions']=next_steps
     return d
+CASE_MODEL=re.compile(r'^iPhone (11|12|13|14|15|16|17)(?: (?:Pro Max|Pro|Plus|mini))?$')
+def open_case(u,model,issue,conversation_id=None,note='สมาชิกส่งคำขอซ่อม'):
+    """Shared by the portal form and confirmed chat requests: same validation either way."""
+    if len(issue.strip())<5:raise HTTPException(422,'กรุณาระบุอาการอย่างน้อย 5 ตัวอักษร')
+    if conversation_id:conversation(u,conversation_id)
+    if not CASE_MODEL.match(model):raise HTTPException(422,'กรุณาเลือกรุ่น iPhone 11–17')
+    with db() as c:
+        now=time.time();r=c.execute('INSERT INTO cases(user_id,conversation_id,model,issue,status,created,updated) VALUES(?,?,?,?,?,?,?)',(u['id'],conversation_id,model,issue.strip()[:2000],'submitted',now,now));cid=r.lastrowid
+        c.execute('INSERT INTO case_events(case_id,actor,status,note,created) VALUES(?,?,?,?,?)',(cid,u['id'],'submitted',note,now))
+        row=c.execute('SELECT * FROM cases WHERE id=?',(cid,)).fetchone()
+    return case_data(row)
 @router.post('/member/cases')
 def create_case(body:CaseBody,request:Request):
-    u=user(request)
-    if len(body.issue.strip())<5:raise HTTPException(422,'กรุณาระบุอาการอย่างน้อย 5 ตัวอักษร')
-    if body.conversation_id:conversation(u,body.conversation_id)
-    if not re.match(r'^iPhone (11|12|13|14|15|16|17)(?: (?:Pro Max|Pro|Plus|mini))?$',body.model):raise HTTPException(422,'กรุณาเลือกรุ่น iPhone 11–17')
-    with db() as c:
-        now=time.time();r=c.execute('INSERT INTO cases(user_id,conversation_id,model,issue,status,created,updated) VALUES(?,?,?,?,?,?,?)',(u['id'],body.conversation_id,body.model,body.issue.strip(),'submitted',now,now));cid=r.lastrowid
-        c.execute('INSERT INTO case_events(case_id,actor,status,note,created) VALUES(?,?,?,?,?)',(cid,u['id'],'submitted','สมาชิกส่งคำขอซ่อม',now))
-        row=c.execute('SELECT * FROM cases WHERE id=?',(cid,)).fetchone()
-    return {'case':case_data(row)}
+    return {'case':open_case(user(request),body.model,body.issue,body.conversation_id)}
 @router.get('/member/cases')
 def list_cases(request:Request):
     u=user(request)
@@ -248,7 +251,10 @@ class QuoteDecision(BaseModel):
 
 @router.post('/member/cases/{cid}/quote-decision')
 def decide_quote(cid:int,body:QuoteDecision,request:Request):
-    u=user(request)
+    return quote_decision(user(request),cid,body.quote_id,body.decision,body.note)
+def quote_decision(u,cid,quote_id,decision,member_note=''):
+    """Approve/reject the current pending quote; stale or foreign quotes are refused (also for chat)."""
+    body=QuoteDecision(quote_id=quote_id,decision=decision,note=member_note)
     with db() as c:
         c.execute('BEGIN IMMEDIATE')
         case=c.execute('SELECT * FROM cases WHERE id=? AND user_id=?',(cid,u['id'])).fetchone()

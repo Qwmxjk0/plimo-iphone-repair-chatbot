@@ -79,6 +79,10 @@ class CatalogTests(unittest.TestCase):
         self.assertIn(3200 + 1490, facts['allowed'])   # จอ 13 + แบต 14
         self.assertFalse(any(r.startswith('รวมราคาประเมินเบื้องต้นของ') for r in facts['rows']))
         self.assertTrue(any('จับคู่' in r or 'คู่รุ่น' in r for r in facts['rows']))
+    def test_no_model_allows_any_catalog_price(self):
+        facts = self.look('ข้อความบนหน้าจอนี้หมายความว่าอะไร')
+        self.assertIn(290, facts['allowed']); self.assertNotIn(500, facts['allowed'])
+        self.assertNotIn(3200, self.look('จอ 13 pro max')['allowed'])  # model known: still strict
     def test_out_of_range_and_unknown_service(self):
         self.assertIn('นอกรุ่น', self.look('iPhone 8 ซ่อมได้ไหม')['rows'][0])
         self.assertIn('ไม่มีรายการและราคา', self.look('ตกน้ำ ซ่อมได้ไหม')['rows'][0])

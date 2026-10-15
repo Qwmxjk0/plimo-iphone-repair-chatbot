@@ -7,6 +7,7 @@
 | Unit / contract | `docker compose exec -T api python -m unittest test_logic test_chat test_membership test_payments test_redis_integration test_ingest` | parser เลขเคส, ชื่อรุ่น, เลขบัตร, ราคา catalog, router, cache ทุกชั้น, single-flight, budget, rate limit, สิทธิ์สมาชิก, การชำระเงิน Stripe (mock), Redis จริง | ไม่ |
 | Eval คุณภาพคำตอบ | `python3 qa/run_eval.py` | 113 กรณีใน [eval_suite.json](eval_suite.json) ตรวจอัตโนมัติ + รันซ้ำวัด cache + คำถามต่างสำนวน | ใช่ (เฉพาะ cache miss) |
 | RAG retrieval | `docker compose exec -T api python - < qa/run_retrieval_eval.py` | 26 คำถามที่กำกับแหล่งที่ถูกต้อง วัด hit@1/3/5 และ MRR ของ LightRAG โดยตรง | น้อยมาก |
+| วงจรเคสด้วย AI | `python3 qa/run_lifecycle_eval.py` | เปิดเคสในแชท → AI แนะนำแอดมิน → อนุมัติผ่านแชท → ซ่อม → ปิดเคส ตรวจ DB ทุกขั้น | น้อย |
 | Security | `python3 qa/run_security.py --docker` | OWASP Top 10:2025: สิทธิ์, headers, ไฟล์ลับ, pin image, cookie, brute force, injection, state machine, webhook ปลอม, input ผิดรูป, log, rate limit | ไม่ |
 | Load | `docker compose exec -T api python - < qa/load_test.py` | 240 คำขอพร้อมกัน 20 ผู้ใช้ และ single-flight 20 คำขอเหมือนกัน | น้อยมาก |
 

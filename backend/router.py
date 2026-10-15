@@ -7,11 +7,11 @@ which is also what makes answers shareable in the cache.
 import json
 import nlu
 
-VERSION = 'router-v5'
+VERSION = 'router-v6'
 INTENTS = ['shop_info', 'price', 'advice', 'ambiguous', 'case', 'payment', 'greeting', 'out_of_scope', 'unsafe']
 SERVICES = ['screen', 'battery', 'port_clean', 'speaker', 'rear_camera', 'film', 'clear_case', 'cable', 'water_damage', 'other']
 VARIANTS = ['base', 'mini', 'plus', 'pro', 'pro_max', 'air', 'e', 'unknown']
-TOPICS = ['status', 'price', 'payment', 'note', 'pickup', 'action', 'none']
+TOPICS = ['status', 'price', 'payment', 'note', 'pickup', 'open', 'approve', 'reject', 'pay', 'action', 'none']
 ANSWERED = {'shop_info', 'price', 'advice', 'ambiguous'}
 
 SCHEMA = {
@@ -39,7 +39,7 @@ intent:
 - shop_info: opening hours and days, location, contact, warranty, repair duration, policies, supported models/brands/devices (other brands or devices are shop_info, not out_of_scope), inspection, parts, discounts, how to order.
 - advice: symptoms, what may be wrong, whether to repair, care related to repair, reading a screen or battery value in an attached image.
 - ambiguous: in scope but too vague to answer usefully (for example "จอ??" or "ราคาเท่าไหร่" with nothing else and no context).
-- case: the customer's own repair case: status, progress, quote amount, latest note, pickup, or asking the chat to cancel, approve or change their case. Asking in general how long repairs take is shop_info, not case.
+- case: the customer's own repair case: wanting to send a device in for repair / open a repair case, status, progress, quote amount, latest note, pickup, approving or rejecting their quote, or asking the chat to cancel or change their case. Asking in general how long repairs take is shop_info, not case. Only asking a price (without saying they want to send the device in) is price, not case.
 - payment: paying for a repair, payment methods or channels, payment status, refunds, and customers offering or asking to send card details in chat (they need to be told the safe way to pay; this is payment, not unsafe).
 - greeting: greetings, thanks or small talk without a question.
 - out_of_scope: everything else, including programming or code, homework, translation, general knowledge, writing tasks and other businesses, even when framed as being for the shop or for a technician.
@@ -49,7 +49,7 @@ standalone: the latest question rewritten as ONE complete Thai question that is 
 models: iPhone models the question is about, from the message or from the previous turns when the message refers back. family is the number as text ("13"), or "se", "x", "xr", "xs" for older models. variant is base when there is no suffix, unknown when unclear. Leave empty for other brands.
 services: every service in the standalone question, including ones carried over from the previous turns (for example "เปลี่ยนจอด้วย" after a battery question means battery and screen); use other for anything not listed.
 case_ref: the case number as an integer when given (PLM-00012 -> 12), or the case being discussed when the message clearly refers back to it; otherwise null.
-case_topic: for case and payment intents: status, price (quote amount), payment, note (latest update or reason), pickup, or action (asks the chat to cancel, approve or change something); otherwise none.
+case_topic: for case and payment intents: open (wants to send the device for repair / open a new case), status, price (quote amount), payment (how or whether paid), pay (wants to pay now for a case), note (latest update or reason), pickup, approve (accepts the quote), reject (declines the quote or asks for a new estimate), or action (asks the chat to cancel or change something else); otherwise none.
 extra_question: ONLY when the intent is case or payment and the same message also asks a separate shop, price or advice question: put that other part here as a standalone Thai question. Otherwise null; several shop/price questions in one message all go into standalone.
 needs_clarification: true when a useful answer needs the model or symptom that the customer has not given.
 time_sensitive: true when the answer depends on today's date or the current time (วันนี้, พรุ่งนี้, ตอนนี้).
@@ -74,6 +74,12 @@ Examples (the output must follow the same shape):
 ข้อความ "เครื่องผมซ่อมเสร็จหรือยัง" -> {"intent":"case","standalone":"งานซ่อมของฉันเสร็จหรือยัง","models":[],"services":[],"case_ref":null,"case_topic":"status","extra_question":null,"needs_clarification":false,"time_sensitive":false}
 บริบท เคสที่กำลังคุย PLM-00012 | ข้อความ "แล้วต้องจ่ายเท่าไหร่" -> {"intent":"case","standalone":"เคส PLM-00012 ต้องจ่ายเท่าไหร่","models":[],"services":[],"case_ref":12,"case_topic":"price","extra_question":null,"needs_clarification":false,"time_sensitive":false}
 ข้อความ "PLM-00012 ถึงไหน แล้วร้านเปิดวันพุธไหม" -> {"intent":"case","standalone":"เคส PLM-00012 ถึงไหนแล้ว","models":[],"services":[],"case_ref":12,"case_topic":"status","extra_question":"ร้านเปิดวันพุธไหม","needs_clarification":false,"time_sensitive":false}
+ข้อความ "จอ iPhone 13 แตก อยากส่งซ่อมครับ" -> {"intent":"case","standalone":"ต้องการส่งซ่อม iPhone 13 ที่หน้าจอแตก","models":[{"family":"13","variant":"base"}],"services":["screen"],"case_ref":null,"case_topic":"open","extra_question":null,"needs_clarification":false,"time_sensitive":false}
+ข้อความ "อยากเปิดเคสซ่อม" -> {"intent":"case","standalone":"ต้องการเปิดเคสซ่อม","models":[],"services":[],"case_ref":null,"case_topic":"open","extra_question":null,"needs_clarification":true,"time_sensitive":false}
+บริบท ลูกค้าบอกก่อนหน้า "แบตหมดไวมาก อยากเอาเครื่องไปซ่อม" และผู้ช่วยถามรุ่น | ข้อความ "iPhone 15 Pro ครับ" -> {"intent":"case","standalone":"ต้องการส่งซ่อม iPhone 15 Pro ที่แบตหมดไว","models":[{"family":"15","variant":"pro"}],"services":["battery"],"case_ref":null,"case_topic":"open","extra_question":null,"needs_clarification":false,"time_sensitive":false}
+ข้อความ "อนุมัติราคาเคส PLM-00012" -> {"intent":"case","standalone":"อนุมัติใบเสนอราคาเคส PLM-00012","models":[],"services":[],"case_ref":12,"case_topic":"approve","extra_question":null,"needs_clarification":false,"time_sensitive":false}
+บริบท เคสที่กำลังคุย PLM-00012 | ข้อความ "แพงไป ขอให้ประเมินใหม่" -> {"intent":"case","standalone":"ปฏิเสธใบเสนอราคาเคส PLM-00012 และขอประเมินใหม่","models":[],"services":[],"case_ref":12,"case_topic":"reject","extra_question":null,"needs_clarification":false,"time_sensitive":false}
+ข้อความ "จ่ายค่าซ่อมเคส PLM-00012 เลย" -> {"intent":"payment","standalone":"ต้องการชำระค่าซ่อมเคส PLM-00012","models":[],"services":[],"case_ref":12,"case_topic":"pay","extra_question":null,"needs_clarification":false,"time_sensitive":false}
 ข้อความ "ยกเลิกเคส PLM-00012 ให้หน่อย" -> {"intent":"case","standalone":"ขอยกเลิกเคส PLM-00012","models":[],"services":[],"case_ref":12,"case_topic":"action","extra_question":null,"needs_clarification":false,"time_sensitive":false}
 ข้อความ "จ่ายเงินช่องทางไหนได้บ้าง" -> {"intent":"payment","standalone":"ชำระเงินช่องทางไหนได้บ้าง","models":[],"services":[],"case_ref":null,"case_topic":"payment","extra_question":null,"needs_clarification":false,"time_sensitive":false}
 ข้อความ "จ่ายเงินผ่านแชทได้ไหม ส่งเลขบัตรให้เลย" -> {"intent":"payment","standalone":"ชำระค่าซ่อมผ่านแชทด้วยการส่งเลขบัตรได้ไหม","models":[],"services":[],"case_ref":null,"case_topic":"payment","extra_question":null,"needs_clarification":false,"time_sensitive":false}

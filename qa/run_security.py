@@ -77,9 +77,11 @@ def main():
         check('A01', 'W01', f'IDOR: {label}', st in (404, 503) and st != 200, f'HTTP {st}')
     st = b.call('GET', '/api/member/conversations/' + uuid.uuid4().hex)[0]
     check('A01', 'W01', 'IDOR: บทสนทนาที่ไม่ใช่ของตัวเอง', st == 404, f'HTTP {st}')
-    for path in ['/api/admin/cases', '/api/admin/metrics', f'/api/admin/cases/{case_id}']:
+    for path in ['/api/admin/cases', '/api/admin/metrics', '/api/admin/insights', f'/api/admin/cases/{case_id}']:
         st_member, st_guest = a.call('GET', path)[0], guest.call('GET', path)[0]
         check('A01', 'W02', f'สิทธิ์ admin: {path}', st_member == 403 and st_guest == 401, f'member {st_member}, guest {st_guest}')
+    st_m, st_g = a.call('POST', f'/api/admin/cases/{case_id}/assist')[0], guest.call('POST', f'/api/admin/cases/{case_id}/assist')[0]
+    check('A01', 'W02', 'สิทธิ์ admin: AI วิเคราะห์เคส', st_m == 403 and st_g == 401, f'member {st_m}, guest {st_g}')
     st = a.call('POST', '/api/auth/logout', headers={'Origin': 'https://evil.example'})[0]
     check('A01', 'W13', 'CSRF: POST ข้าม origin ถูกปฏิเสธ', st == 403, f'HTTP {st}')
 

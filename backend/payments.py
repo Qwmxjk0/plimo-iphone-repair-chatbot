@@ -39,7 +39,10 @@ async def stripe(method, path, **kwargs):
 
 @router.post('/member/cases/{cid}/checkout')
 async def checkout(cid: int, request: Request):
-    u = membership.user(request)
+    return {'url': await create_checkout(membership.user(request), cid, base_url(request))}
+
+async def create_checkout(u, cid, base):
+    """Checkout URL for the member's approved quote (portal button and chat link share this)."""
     if not enabled():
         raise HTTPException(503, 'ร้านยังไม่เปิดชำระเงินออนไลน์')
     with membership.db() as c:
@@ -54,13 +57,12 @@ async def checkout(cid: int, request: Request):
         pending = c.execute("SELECT checkout_url FROM payments WHERE quote_id=? AND user_id=? AND status='pending' AND created>? ORDER BY id DESC LIMIT 1",
                             (quote['id'], u['id'], time.time() - 1500)).fetchone()
     if pending and pending['checkout_url']:
-        return {'url': pending['checkout_url']}
+        return pending['checkout_url']
     amount = int(round(quote['amount'] * 100))
     if amount < MIN_SATANG:
         raise HTTPException(409, 'ยอดชำระต่ำกว่าขั้นต่ำของระบบชำระเงิน (10 บาท)')
     reference = f'PLM-{cid:05d}'
     window = int(time.time() // 600) * 600
-    base = base_url(request)
     session = await stripe('POST', '/checkout/sessions', headers={'Idempotency-Key': f"plimo-checkout-{quote['id']}-{window}"}, data={
         'mode': 'payment', 'locale': 'th', 'line_items[0][quantity]': '1',
         'line_items[0][price_data][currency]': 'thb', 'line_items[0][price_data][unit_amount]': str(amount),
@@ -80,7 +82,7 @@ async def checkout(cid: int, request: Request):
         c.execute("INSERT OR IGNORE INTO payments(case_id,quote_id,user_id,amount_satang,currency,session_id,checkout_url,status,created,updated) VALUES(?,?,?,?,?,?,?,'pending',?,?)",
                   (cid, quote['id'], u['id'], amount, 'thb', session['id'], url, now, now))
     logger.info('checkout_created case=%s quote=%s', cid, quote['id'])
-    return {'url': url}
+    return url
 
 def apply_session(session):
     """Mark a payment paid only when every field matches what we created. Idempotent."""

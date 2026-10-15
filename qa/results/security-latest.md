@@ -1,6 +1,6 @@
-# ผลตรวจความปลอดภัย (OWASP Top 10:2025) — 2026-10-15 08:48
+# ผลตรวจความปลอดภัย (OWASP Top 10:2025) — 2026-10-15 13:46
 
-เป้าหมาย: `http://127.0.0.1:8081` · **ผ่าน 49/49**
+เป้าหมาย: `http://127.0.0.1:8081` · **ผ่าน 51/51**
 
 | OWASP | Test | รายการ | ผล | รายละเอียด |
 |---|---|---|---|---|
@@ -10,7 +10,9 @@
 | A01 | W01 | IDOR: บทสนทนาที่ไม่ใช่ของตัวเอง | ผ่าน | HTTP 404 |
 | A01 | W02 | สิทธิ์ admin: /api/admin/cases | ผ่าน | member 403, guest 401 |
 | A01 | W02 | สิทธิ์ admin: /api/admin/metrics | ผ่าน | member 403, guest 401 |
-| A01 | W02 | สิทธิ์ admin: /api/admin/cases/25 | ผ่าน | member 403, guest 401 |
+| A01 | W02 | สิทธิ์ admin: /api/admin/insights | ผ่าน | member 403, guest 401 |
+| A01 | W02 | สิทธิ์ admin: /api/admin/cases/48 | ผ่าน | member 403, guest 401 |
+| A01 | W02 | สิทธิ์ admin: AI วิเคราะห์เคส | ผ่าน | member 403, guest 401 |
 | A01 | W13 | CSRF: POST ข้าม origin ถูกปฏิเสธ | ผ่าน | HTTP 403 |
 | A02 | W03 | CSP ไม่มี unsafe-inline/eval และห้าม frame จากเว็บอื่น | ผ่าน | default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis |
 | A02 | W03 | header x-content-type-options | ผ่าน | nosniff |
@@ -34,7 +36,7 @@
 | A03 | W05 | backend/Dockerfile base image pin เวอร์ชัน | ผ่าน | FROM python:3.12.15-slim |
 | A03 | W05 | Python dependency ล็อกเวอร์ชันตรงที่ทดสอบ | ผ่าน | requirements.lock |
 | A02 | W05 | API container ไม่รันเป็น root | ผ่าน |  |
-| A04 | W06 | cookie สมาชิก HttpOnly + SameSite=Strict | ผ่าน | plimo_member=CuVNIkhRH2m4x87ugktwY4YVIRKdRgYGqWMBV6zmUAA; Ht |
+| A04 | W06 | cookie สมาชิก HttpOnly + SameSite=Strict | ผ่าน | plimo_member=ZnJ_edhoYsXlRHymzmdFf4rsJKF_yzXvIVYnTYjTQ_Y; Ht |
 | A07 | W09 | ปฏิเสธรหัสผ่านสั้น | ผ่าน | HTTP 422 |
 | A07 | W09 | brute force บัญชีเดียวถูกล็อก | ผ่าน | 401,401,401,401,401,401,401,401,401,429,429 |
 | A07 | W09 | บัญชีอื่นจาก IP เดียวกันยังเข้าได้ (NAT ห้องเรียน) | ผ่าน | HTTP 200 |
@@ -51,5 +53,5 @@
 | A10 | W12 | JSON เสียไม่ทำให้ 500 | ผ่าน | HTTP 422 |
 | A09 | W11 | log ไม่มี key/เลขบัตร/เลขประจำตัว | ผ่าน |  |
 | A09 | W11 | มี log เหตุการณ์ (chat_complete / router / guard) | ผ่าน |  |
-| A09 | W11 | ตัวนับ guard/rate/budget ใน admin metrics | ผ่าน | answer_hit, answer_miss, chats, cost_micro_usd, fast_hit, guard_card, guard_inje |
+| A09 | W11 | ตัวนับ guard/rate/budget ใน admin metrics | ผ่าน | action_done, admin_assist, answer_hit, answer_miss, chats, cost_micro_usd, fast_ |
 | LLM06 | K04 | nginx จำกัดคำขอแชทถี่ต่อ IP | ผ่าน | 18x200 8x429 |
