@@ -12,6 +12,8 @@ function render() {
     const photo=document.createElement('img');photo.className='catalog-illustration';photo.loading='lazy';photo.decoding='async';photo.width=960;photo.height=720;
     const [file,alt]=PHOTOS.find(([key])=>key.test(item.name))?.slice(1)||['repair','ช่างกำลังซ่อม iPhone'];
     photo.src='assets/photos/'+file+'.webp';photo.alt=alt;art.append(photo);
+    const model=item.name.match(/iPhone\s*\d+(?:\s*[–-]\s*\d+)?(?:\s*(?:Pro Max|Pro|Plus|mini))?/)?.[0]||(item.models?.length===1?item.models[0]:'');
+    if(model){const tag=document.createElement('span');tag.className='model-tag';tag.textContent=model;art.append(tag);}
     const body=document.createElement('div'); body.className='catalog-body';
     const available=item.confirmed||item.demo;
     const badge=document.createElement('span'); badge.className='pending-badge'; badge.textContent=item.price_status==='estimate'?'ราคาประเมินเบื้องต้น':item.demo?'ราคาสาธิต':item.confirmed?'ข้อมูลร้านยืนยัน':'รอข้อมูลจริง';
