@@ -67,7 +67,7 @@ children.push(h1('1. ชื่อโครงงานและผู้พั�
   kv([
     ['ชื่อโครงงาน', 'Plimo iPhone Repair'],
     ['คำอธิบาย', 'แชทบอทภาษาไทยสำหรับร้านซ่อม iPhone ที่ใช้ LLM เป็นแกนกลาง ทำ 2 หน้าที่ คือ (1) ตอบลูกค้าเรื่องราคา บริการ อาการเสีย รูปภาพ เปิดและติดตามเคสซ่อม อนุมัติราคา และชำระเงิน (2) ช่วยแอดมินสรุปเคส แนะนำสถานะและราคาจากแค็ตตาล็อก และสรุปคำถามลูกค้าประจำวัน'],
-    ['ผู้พัฒนา', 'กฤตนัย กัปตพล (พัฒนาคนเดียว)'],
+    ['ผู้พัฒนา', 'กฤตนัย กัปตพล'],
     ['เว็บไซต์', 'https://203-156-66-86.sslip.io'],
     ['ซอร์สโค้ด', 'https://github.com/Qwmxjk0/plimo-iphone-repair-chatbot'],
   ]));
@@ -119,6 +119,7 @@ children.push(h1('3. แผนภาพสถาปัตยกรรมระ�
   numbered('เคส/การชำระเงิน: ตอบจากฐานข้อมูล SQLite โดยตรง ส่วนคำถามร้าน ราคา อาการ: ค้นคลังความรู้ (LightRAG) + ดึงราคาจากแค็ตตาล็อก → สร้างคำตอบด้วย LLM'),
   numbered('ตัวตรวจคำตอบ: ตัวเลขราคาต้องมีในแค็ตตาล็อก และห้ามมีข้อมูลภายในหลุด ถ้าไม่ผ่านจะใช้คำตอบจากแค็ตตาล็อกตรงๆ แทน'),
   numbered('การทำรายการ (เปิดเคส อนุมัติราคา) เกิดขึ้นเมื่อลูกค้าพิมพ์ "ยืนยัน" เท่านั้น และตรวจสิทธิ์กับสถานะซ้ำก่อนบันทึก'),
+  pageBreak(),
   h2('3.2 เทคโนโลยีที่ใช้'),
   table([2000, 3300, 3726], ['ชั้น', 'เทคโนโลยี', 'หน้าที่'], [
     ['หน้าเว็บ', 'HTML / CSS / JavaScript', 'หน้าร้าน แชท บัญชีสมาชิก หน้าแอดมิน (รองรับมือถือ)'],
@@ -175,7 +176,6 @@ children.push(h1('4. จุดเด่นเชิงเทคนิค (ส่
 // 5. Roles
 const ROLE = 'กฤตนัย กัปตพล';
 children.push(h1('5. บทบาทหน้าที่ของผู้พัฒนา'),
-  p('โครงงานนี้พัฒนาโดยผู้พัฒนาคนเดียว ตารางแยกตามงานที่ทำ'),
   table([1700, 3826, 3500], ['ใคร', 'ทำอะไร', 'ได้อะไร'], [
     [ROLE, 'วิเคราะห์ธุรกิจ กำหนดรุ่นที่รับ ราคา และนโยบาย เขียนคลังความรู้ 5 เอกสาร', 'คลังความรู้ ~6 หน้า + แค็ตตาล็อก 16 รายการ ที่ไม่แต่งข้อมูลร้าน'],
     [ROLE, 'ออกแบบสถาปัตยกรรม ลำดับการทำงาน และ cache หลายชั้น', 'ระบบตอบคำถามใหม่ใน ~3 วินาที คำถามซ้ำในระดับมิลลิวินาที ค่า AI ~$0.0028 ต่อคำตอบ'],
@@ -252,11 +252,40 @@ children.push(h1('9. สรุปผลการทดสอบทั้งห�
   ]),
   p(`ประสิทธิภาพ: คำถามใหม่ที่ต้องเรียกโมเดล ใช้เวลาฝั่งเซิร์ฟเวอร์ p50 ${(lat.p50 / 1000).toFixed(1)} วินาที, p95 ${(lat.p95 / 1000).toFixed(1)} วินาที; คำถามซ้ำตอบจาก cache ในระดับมิลลิวินาที; ค่า AI ประมาณ $0.0028 ต่อคำตอบใหม่`, { size: 21 }),
   ...(data.regraded.length ? [p('หมายเหตุความโปร่งใส: กรณี K17 ผ่านจากการตรวจคะแนนซ้ำด้วยคำตอบเดิม เพราะผู้ช่วยตอบว่า "ยืนยันไม่ได้" ซึ่งมีความหมายเดียวกับเกณฑ์ (ไม่ได้ถามใหม่)', { size: 20, color: GREY })] : []),
+  p('ผลทดสอบทุกกรณีแบบละเอียดอยู่ในภาคผนวกท้ายเอกสาร: ก) คำตอบ 143 กรณี ข) กติกาต้องทำ/ห้ามทำ 33 ข้อ ค) ความปลอดภัย 51 รายการ ง) API ทุก endpoint', { size: 21, bold: true }),
   h2('ไฟล์และลิงก์ประกอบ'),
   bullet([run('เว็บไซต์: '), link('https://203-156-66-86.sslip.io')]),
   bullet([run('ซอร์สโค้ดและผลทดสอบ: '), link('https://github.com/Qwmxjk0/plimo-iphone-repair-chatbot')]),
   bullet('รายงานผลทดสอบละเอียด: qa/results/ (eval-vps, api-check-vps, prompt-rules-vps, retrieval-vps, security-vps, lifecycle-vps, stripe-payment-vps)'),
   bullet('มาตรการป้องกันและการจับคู่กับ OWASP: qa/guardrails.md'),
+);
+
+// Appendices: every test that ran on the public server
+const SMALL = 18;
+const cats = Object.keys(data.cat_names);
+children.push(pageBreak(), h1('ภาคผนวก ก: ผลทดสอบคำตอบทั้งหมด ' + data.all_eval.length + ' กรณี'),
+  p('ทดสอบบนเว็บจริงด้วย qa/run_eval.py แต่ละกรณีมีเกณฑ์ตรวจอัตโนมัติ (คำที่ต้องมี คำที่ห้ามมี ตัวเลขราคา เส้นทางของ router การเก็บรูป) เวลาเป็นวินาที', { size: 20, color: GREY }),
+  table([3000, 3026, 1500, 1500], ['หมวด', 'ตรวจอะไร', 'ผ่าน', 'ทั้งหมด'], cats.filter((c) => s.by_category[c]).map((c) => [
+    `${c} ${data.cat_names[c]}`, ({ F: 'เวลาเปิด รุ่นที่รับ นโยบาย ไม่แต่งข้อมูล', P: 'ราคาตรงรุ่นจากแค็ตตาล็อก Pro/Pro Max แยก', A: 'คำถามกำกวม หลายคำถามในข้อความเดียว รวมราคา', M: 'จำบริบทข้ามข้อความ ไม่รั่วข้ามผู้ใช้', C: 'ติดตามเคสด้วยเลขทุกรูปแบบ สิทธิ์เจ้าของ', I: 'วิเคราะห์ภาพ รูปบัตร รูปไม่เกี่ยว รูปเสีย', S: 'injection ข้อมูลภายใน ข้อมูลส่วนตัว นอกขอบเขต', Y: 'ไม่รับเลขบัตรในแชท', K: 'ตอบจากคลังความรู้ฉบับเต็ม' })[c] || '',
+    String(s.by_category[c].passed), String(s.by_category[c].total)]), { align: [null, null, AlignmentType.CENTER, AlignmentType.CENTER] }),
+  p(''),
+  table([700, 1000, 2500, 3326, 700, 800], ['รหัส', 'หมวด', 'คำถาม', 'ผลตอบ (ย่อ)', 'ผล', 'เวลา'],
+    data.all_eval.map((x) => [x.id, data.cat_names[x.cat] || x.cat, clip(x.turns.join(' → '), 150), clip(x.answer, 150), verdict(x.pass), secs(x.ms)]),
+    { size: SMALL, align: [null, null, null, null, AlignmentType.CENTER, AlignmentType.CENTER] }),
+  ...(data.regraded.length ? [p('หมายเหตุ: K17 ผ่านจากการตรวจคะแนนซ้ำด้วยคำตอบเดิม (คำว่า "ยืนยันไม่ได้" มีความหมายเดียวกับเกณฑ์)', { size: 18, color: GREY })] : []),
+  pageBreak(), h1('ภาคผนวก ข: สุ่มทดสอบกติกา "ต้องทำ / ห้ามทำ" ' + data.rules.length + ' ข้อ'),
+  p('17 กติกาที่ดึงจาก system prompt แต่ละกติกามีคำถามทดสอบ 1–3 ข้อ สุ่มลำดับด้วย seed 2026 (รันซ้ำ: python3 qa/run_prompt_rules.py --n 33 --seed 2026)', { size: 20, color: GREY }),
+  table([700, 900, 3000, 3526, 900], ['รหัส', 'ประเภท', 'กติกา', 'คำถามทดสอบ → คำตอบ (ย่อ)', 'ผล'],
+    data.rules.map((r) => [r.id, r.type, r.rule, [run(r.question, { size: SMALL, bold: true }), run(clip(r.answer, 120), { size: SMALL, color: '3A3A3C' })].map((t) => new Paragraph({ children: [t], spacing: { after: 30 } })), verdict(r.pass)]),
+    { size: SMALL, align: [null, null, null, null, AlignmentType.CENTER] }),
+  pageBreak(), h1('ภาคผนวก ค: ตรวจความปลอดภัย ' + data.security.length + ' รายการ (OWASP Top 10:2025 + LLM)'),
+  p('ทดสอบบนเว็บจริงด้วย qa/run_security.py ทั้งสิทธิ์การเข้าถึง security headers ไฟล์ลับ การเข้ารหัส injection การยืนยันตัวตน webhook ปลอม input ผิดรูป log และ rate limit', { size: 20, color: GREY }),
+  table([1000, 800, 3700, 2626, 900], ['OWASP', 'รหัส', 'รายการ', 'ผลที่ได้', 'ผล'],
+    data.security.map((x) => [x.owasp, x.id, x.title, clip(x.detail || '', 90), verdict(x.pass)]), { size: SMALL, align: [null, null, null, null, AlignmentType.CENTER] }),
+  pageBreak(), h1('ภาคผนวก ง: ตรวจ API ทุก endpoint (' + data.api.length + ' รายการ)'),
+  p('ทดสอบด้วย qa/run_api_check.py โดยเรียกตามลำดับการใช้งานจริง: แชทผู้เยี่ยมชม → สมาชิก → เปิดเคส → แอดมิน → ใบเสนอราคา → ชำระเงิน และตรวจสิทธิ์ 401/403/404', { size: 20, color: GREY }),
+  table([900, 3100, 700, 900, 2526, 900], ['Method', 'Endpoint', 'ได้', 'ควรได้', 'หมายเหตุ', 'ผล'],
+    data.api.map((x) => [x.method, x.path, x.got, x.want, clip(x.note, 80), verdict(x.pass)]), { size: SMALL, align: [null, null, AlignmentType.CENTER, AlignmentType.CENTER, null, AlignmentType.CENTER] }),
 );
 
 const doc = new Document({
