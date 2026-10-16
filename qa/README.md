@@ -1,6 +1,6 @@
 # Plimo — ชุดทดสอบ
 
-แผนและเกณฑ์ตรวจรับทั้งหมดอยู่ใน [production-plan.md](production-plan.md) ผลล่าสุดของแต่ละชั้นอยู่ใน `qa/results/*-latest.md`
+**แผนการทดสอบ: [test-plan.md](test-plan.md)** (วัตถุประสงค์ ชุดทดสอบ เกณฑ์ผ่าน ข้อผิดพลาดที่พบ) · สรุปผลสำหรับส่งงาน: [results/SUMMARY.md](results/SUMMARY.md) · แผนและเกณฑ์ตรวจรับเดิมอยู่ใน [production-plan.md](production-plan.md) ผลล่าสุดของแต่ละชั้นอยู่ใน `qa/results/*-latest.md`
 
 | ชั้น | คำสั่ง | ตรวจอะไร | เสียค่า API |
 |---|---|---|---|
@@ -32,6 +32,6 @@
 
 ## ไฟล์เดิมที่ยังใช้อ้างอิง
 
-- `cases.json`, `test-plan.md`, `run_live.py`: ชุด 20 กรณีรุ่นแรก (ตรวจด้วยคน) ผลเก่าที่เป็น blocked เป็นประวัติก่อนตั้งค่า key
+- `cases.json`, `legacy-test-plan-v1.md`, `run_live.py`: ชุด 20 กรณีรุ่นแรก (ตรวจด้วยคน) ผลเก่าที่เป็น blocked เป็นประวัติก่อนตั้งค่า key
 - `redteam-cases.json`, `run_redteam.py`, `results/redteam-*.{json,md}`: red-team รอบก่อน (พบ RT01 Python นอกงานร้าน ซึ่งแก้แล้วด้วย router และทดสอบซ้ำใน S06/S07)
 - `images/`: ภาพสังเคราะห์สำหรับทดสอบ ไม่ใช่เครื่องลูกค้าจริงและไม่ใช่หลักฐานความแม่นยำในการวินิจฉัย

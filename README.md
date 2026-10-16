@@ -65,7 +65,9 @@ Request path: **guards → cache → router → (SQLite for cases/payments) or (
 | Stripe test payment + webhook | paid, both events delivered | [stripe-payment-vps.md](qa/results/stripe-payment-vps.md) |
 | Unit / contract (mocked providers) | **101/101** | [unit-latest.md](qa/results/unit-latest.md) |
 
-Course submission summary (Thai): [qa/results/SUMMARY.md](qa/results/SUMMARY.md). How each suite works: [qa/README.md](qa/README.md). Guardrails and OWASP mapping: [qa/guardrails.md](qa/guardrails.md).
+**Test plan:** [qa/test-plan.md](qa/test-plan.md) (objectives, suites, pass criteria, bugs found) · **Test sets:** [qa/eval_suite.json](qa/eval_suite.json) (143 cases), [qa/prompt_rules.json](qa/prompt_rules.json) (17 rules / 33 questions), [qa/images/](qa/images/) (synthetic test images) · **How to run each suite:** [qa/README.md](qa/README.md) · **Guardrails and OWASP mapping:** [qa/guardrails.md](qa/guardrails.md)
+
+**Course submission (Thai):** [development and test report (.docx)](docs/submission/Plimo-iPhone-Repair-Deliverable2.docx) · [test summary](qa/results/SUMMARY.md) · [presentation notes](qa/presentation.md)
 
 ## Run locally
 
