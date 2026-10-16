@@ -12,7 +12,7 @@ An LLM-first customer assistant and admin copilot for a Thai iPhone repair shop.
 
 - **Grounded answers, not guesses.** Prices come only from the shop catalog and every answer is checked: an amount the catalog does not back is replaced. Pro / Pro Max never inherit base-model prices. Unknown facts (warranty, address, repair time) are answered as "not confirmed" instead of invented.
 - **The model proposes, the system confirms.** Opening a case or approving a quote from chat is a stored proposal that runs only after the customer types "ยืนยัน", with ownership and state re-checked. Case status and payments are read from the database, never generated.
-- **Measured RAG.** Knowledge is split into 53 sections and retrieval is scored on its own (hit@1 / hit@3 / MRR). Tuning moved hit@1 from 31% to 72–88% and hit@3 to 98–100%.
+- **Measured RAG.** Knowledge is split into 53 sections and retrieval is scored on its own (hit@1 / hit@3 / MRR). Tuning moved hit@1 from 31% to 88% on the same 26 questions; on today's larger knowledge base (40 questions) the right document is in the top 3 for 98%.
 - **Cheap and fast.** Six cache layers with single-flight, OpenAI prompt caching and a daily USD budget: about **$0.0028 per new answer**, cached answers in milliseconds.
 - **Defence in depth.** Input guards, an LLM router, output validators, rate limits, PII masking, image moderation and triage, signed payment webhooks. Mapped to OWASP Top 10 for LLM 2026 and OWASP Top 10:2025.
 - **Tested end to end.** 143 graded answer cases, every API endpoint, randomized do/don't prompt rules, 51 security checks, the full case lifecycle and a real Stripe test payment, all on the public server.
