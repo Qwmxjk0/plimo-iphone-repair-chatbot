@@ -9,3 +9,4 @@ __pycache__/
 deploy/.ingested-*
 .openai/
 ~$*
+docs/submission/video-script.md

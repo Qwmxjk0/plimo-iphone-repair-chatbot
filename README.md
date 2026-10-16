@@ -67,7 +67,7 @@ Request path: **guards → cache → router → (SQLite for cases/payments) or (
 
 **Test plan:** [qa/test-plan.md](qa/test-plan.md) (objectives, suites, pass criteria, bugs found) · **Test sets:** [qa/eval_suite.json](qa/eval_suite.json) (143 cases), [qa/prompt_rules.json](qa/prompt_rules.json) (17 rules / 33 questions), [qa/images/](qa/images/) (synthetic test images) · **How to run each suite:** [qa/README.md](qa/README.md) · **Guardrails and OWASP mapping:** [qa/guardrails.md](qa/guardrails.md)
 
-**Course submission (Thai):** [development and test report (.docx)](docs/submission/Plimo-iPhone-Repair-Deliverable2.docx) · [test summary](qa/results/SUMMARY.md) · [presentation notes](qa/presentation.md) · [4-minute demo video script](docs/submission/video-script.md)
+**Course submission (Thai):** [development and test report (.docx)](docs/submission/Plimo-iPhone-Repair-Deliverable2.docx) · [test summary](qa/results/SUMMARY.md) · [presentation notes](qa/presentation.md)
 
 ## Run locally
 
