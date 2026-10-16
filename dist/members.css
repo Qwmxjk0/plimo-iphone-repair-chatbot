@@ -86,3 +86,9 @@ button{color:inherit}
 .row-actions{display:flex;gap:8px;flex-shrink:0}
 #member-dialog .row-actions .member-action{margin:0}
 @media(max-width:700px){#member-dialog .conv-row{flex-direction:column;align-items:stretch;gap:12px}.row-actions .member-action{flex:1}}
+
+/* Admin signed in on the storefront: point to the admin page instead of an empty case list. */
+#member-dialog .admin-note{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:20px 22px;border-radius:14px;background:#0f1d33;border:1px solid rgba(10,132,255,.35);margin-bottom:16px}
+#member-dialog .admin-note strong{font-size:15px}
+#member-dialog .admin-note p{margin:0 0 6px;font-size:13px;color:#a1a1a6}
+#member-dialog .admin-note .member-action{text-decoration:none;font-size:13px;padding:8px 16px;border-radius:999px}

@@ -24,7 +24,14 @@ async function showMember(tab='cases'){
  try{
  const head=memberTabs(tab);mb.replaceChildren(head);
  if(tab==='cases'){
-   const d=await memberApi('/member/cases');if(!d.cases.length){mb.append(node('p','ยังไม่มีเคส กดส่งเคสใหม่เพื่อเริ่มต้น','member-hint'));return;}
+   const d=await memberApi('/member/cases');
+   if(memberUser?.role==='admin'){
+     // Admins see every customer's case on the admin page; this tab lists only cases the account itself owns.
+     const note=node('div','','admin-note');note.append(node('strong','คุณเข้าสู่ระบบในฐานะผู้ดูแลร้าน'),node('p','เคสของลูกค้าทุกคนอยู่ที่หน้า Admin แท็บนี้แสดงเฉพาะเคสที่บัญชีนี้ส่งเอง'));
+     const go=node('a','ไปหน้า Admin','member-action primary');go.href='admin.html';note.append(go);mb.append(note);
+     if(!d.cases.length)return;
+   }
+   if(!d.cases.length){mb.append(node('p','ยังไม่มีเคส กดส่งเคสใหม่เพื่อเริ่มต้น','member-hint'));return;}
    const intro=node('div','','member-section-title');intro.append(node('h3','งานซ่อมของฉัน'),node('span',d.cases.length+' เคส'));mb.append(intro);
    const list=node('div','','member-list');for(const c of d.cases){
      const row=node('article','','member-row'),heading=node('div','','case-heading');heading.append(node('strong',c.reference+' · '+c.model),node('span',c.status==='awaiting_approval'&&c.quote?.status==='approved'?'รอร้านเริ่มซ่อม':statusNames[c.status],'status-badge'));row.append(heading,node('p',c.issue,'case-issue'));
