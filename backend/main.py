@@ -311,8 +311,10 @@ async def single_flight(key, ttl, compute):
         await cache.eval("if redis.call('get',KEYS[1])==ARGV[1] then return redis.call('del',KEYS[1]) else return 0 end", 1, lock, token)
 
 async def route_message(text, history, active_case, has_images):
-    payload = router.request(text, history, active_case, has_images)
-    key = "router:" + digest([router.VERSION, ROUTER_MODEL, nlu.canonical(text), [nlu.canonical(t["content"] or "") for t in payload["บทสนทนาก่อนหน้า"]], active_case, has_images])
+    case_model = membership.case_model(active_case) if active_case else None
+    payload = router.request(text, history, active_case, has_images, case_model)
+    key = "router:" + digest([router.VERSION, ROUTER_MODEL, nlu.canonical(text), [nlu.canonical(t["content"] or "") for t in payload["บทสนทนาก่อนหน้า"]],
+                              active_case, has_images, case_model, payload["รุ่นล่าสุดที่ลูกค้าพูดถึง"]])
 
     async def compute():
         try:

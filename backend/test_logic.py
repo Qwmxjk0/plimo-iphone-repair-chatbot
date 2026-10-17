@@ -127,6 +127,17 @@ class RouterParseTests(unittest.TestCase):
         self.assertTrue(router.fallback('วันนี้เปิดไหม')['time_sensitive'])
 
 class RouterCasePriceTests(unittest.TestCase):
+    def test_router_gets_latest_model_and_case_model(self):
+        import router
+        hist = [{'role': 'user', 'content': 'เปลี่ยนจอ iPhone 14 เท่าไหร่'}, {'role': 'assistant', 'content': 'iPhone 15 ก็มีครับ'},
+                {'role': 'user', 'content': 'ร้านเปิดกี่โมง'}, {'role': 'assistant', 'content': '10:00'},
+                {'role': 'user', 'content': 'จ่ายไปเท่าไหร่'}, {'role': 'assistant', 'content': '1,490 บาท'}]
+        payload = router.request('แล้วแบตล่ะ', hist, 49, False, 'iPhone 13 Pro')
+        self.assertEqual(payload['รุ่นล่าสุดที่ลูกค้าพูดถึง'], 'iPhone 14')
+        self.assertEqual(payload['รุ่นของเคสที่กำลังคุย'], 'iPhone 13 Pro')
+        self.assertEqual(len(payload['บทสนทนาก่อนหน้า']), 4)
+        self.assertIsNone(router.request('แล้วแบตล่ะ', [], None, False, 'iPhone 13')['รุ่นของเคสที่กำลังคุย'])
+
     def test_service_price_question_is_not_the_case_quote(self):
         import router
         raw = lambda ref: json.dumps({'intent': 'case', 'standalone': 'q', 'models': [], 'services': [], 'case_ref': ref, 'case_topic': 'price',

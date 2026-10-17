@@ -5,9 +5,10 @@ retrieval, or a fixed reply) and rewrites follow-ups into a standalone question,
 which is also what makes answers shareable in the cache.
 """
 import json
+import catalog
 import nlu
 
-VERSION = 'router-v10'
+VERSION = 'router-v11'
 INTENTS = ['shop_info', 'price', 'advice', 'ambiguous', 'case', 'payment', 'greeting', 'out_of_scope', 'unsafe']
 SERVICES = ['screen', 'battery', 'port_clean', 'speaker', 'rear_camera', 'film', 'clear_case', 'cable', 'water_damage', 'other']
 VARIANTS = ['base', 'mini', 'plus', 'pro', 'pro_max', 'air', 'e', 'unknown']
@@ -32,7 +33,8 @@ SCHEMA = {
 }
 
 INSTRUCTIONS = """You route messages for the Thai chat assistant of "Plimo iPhone Repair". The shop repairs iPhone 11–17 including Pro / Pro Max, sells a few accessories (glass film, clear case, Lightning and USB-C cables), and members can track repair cases (PLM-xxxxx), approve quotes and pay approved quotes in their account.
-Return JSON only. Never answer the customer. The input is JSON: the latest message, whether images are attached, up to two previous turns, and the case currently being discussed.
+Return JSON only. Never answer the customer. The input is JSON: the latest message, whether images are attached, up to two previous turns, the case currently being discussed and its model, and the latest iPhone model the customer named (possibly in an older turn).
+When a follow-up names a service or symptom but no model ("แล้วแบตล่ะ", "จอด้วย"), use "รุ่นล่าสุดที่ลูกค้าพูดถึง" for models; if that is empty, use "รุ่นของเคสที่กำลังคุย". A model in the latest message always wins.
 
 intent:
 - price: cost of a repair, service or accessory, totals or comparisons of prices.
@@ -101,11 +103,21 @@ Examples (the output must follow the same shape):
 ข้อความ "สวัสดีครับ" -> {"intent":"greeting","standalone":"","models":[],"services":[],"case_ref":null,"case_topic":"none","extra_question":null,"needs_clarification":false,"time_sensitive":false}
 ข้อความ "ขอบคุณมากครับ" -> {"intent":"greeting","standalone":"","models":[],"services":[],"case_ref":null,"case_topic":"none","extra_question":null,"needs_clarification":false,"time_sensitive":false}"""
 
-def request(text, history, active_case, has_images):
+def latest_model(history):
+    """The last iPhone model the customer named anywhere in the kept history (not only the last two turns)."""
+    for h in reversed(history):
+        found = nlu.extract_models(str(h.get('content') or '')) if h.get('role') == 'user' else []
+        if found:
+            return catalog.model_name(*found[-1])
+    return None
+
+def request(text, history, active_case, has_images, case_model=None):
     """The router input: latest message plus a short, bounded context."""
     turns = [{'role': h.get('role'), 'content': str(h.get('content', ''))[:300]} for h in history[-4:]]
     return {'ข้อความ': text, 'มีภาพประกอบ': has_images, 'บทสนทนาก่อนหน้า': turns,
-            'เคสที่กำลังคุย': f'PLM-{active_case:05d}' if active_case else None}
+            'เคสที่กำลังคุย': f'PLM-{active_case:05d}' if active_case else None,
+            'รุ่นของเคสที่กำลังคุย': case_model if active_case else None,
+            'รุ่นล่าสุดที่ลูกค้าพูดถึง': latest_model(history)}
 
 def fallback(text):
     """Rules only: used without a model key, on router failure, or over budget."""

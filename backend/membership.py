@@ -350,6 +350,9 @@ def case_lead(item,topic):
     if st=='checking':return f'ร้านกำลังตรวจเช็คเครื่องเคส {ref} ครับ จะส่งใบเสนอราคาให้คุณอนุมัติก่อนเริ่มซ่อม'
     if st=='received':return f'ร้านรับเรื่องเคส {ref} แล้วครับ ขั้นต่อไปคือตรวจเช็คเครื่อง'
     return f'ส่งเคส {ref} แล้วครับ รอร้านรับเรื่อง'
+def case_model(cid):
+    with db() as c:row=c.execute('SELECT model FROM cases WHERE id=?',(cid,)).fetchone()
+    return row['model'] if row else None
 def case_brief(u,cid):
     """Facts of one owned case for wording a chat answer, plus the amounts that answer may contain."""
     with db() as c:
