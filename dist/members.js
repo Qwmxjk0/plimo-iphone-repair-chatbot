@@ -52,8 +52,16 @@ async function showMember(tab='cases'){
        pay.classList.add('pay-action');row.append(pay,node('p','โหมดทดสอบ ไม่มีการตัดเงินจริง ใช้บัตรทดสอบ 4242 4242 4242 4242 วันหมดอายุในอนาคต และ CVC ใดก็ได้','member-hint'));
      }
      const details=node('details','','case-history'),summary=node('summary','ประวัติสถานะ'),timeline=node('ol','','case-timeline');details.append(summary,timeline);let loaded=false;
-     details.addEventListener('toggle',async()=>{if(!details.open||loaded)return;loaded=true;timeline.replaceChildren(node('li','กำลังโหลด…','member-hint'));try{const detail=await memberApi('/member/cases/'+c.id);timeline.replaceChildren();for(const ev of detail.events){const item=node('li'),line=node('div','','timeline-heading'),date=node('time',new Date(ev.created*1000).toLocaleString('th-TH'));date.dateTime=new Date(ev.created*1000).toISOString();line.append(node('strong',statusNames[ev.status]),date);item.append(line,node('p',ev.note));timeline.append(item);}}catch(e){loaded=false;timeline.replaceChildren(node('li','โหลดประวัติไม่สำเร็จ กรุณาปิดแล้วเปิดอีกครั้ง','member-hint'));fail(e);}});
-     row.append(details);list.append(row);
+     details.addEventListener('toggle',async()=>{if(!details.open||loaded)return;loaded=true;timeline.replaceChildren(node('li','กำลังโหลด…','member-hint'));try{const detail=await memberApi('/member/cases/'+c.id);timeline.replaceChildren();for(const ev of detail.events){const item=node('li'),line=node('div','','timeline-heading'),date=node('time',new Date(ev.created*1000).toLocaleString('th-TH'));date.dateTime=new Date(ev.created*1000).toISOString();line.append(node('strong',ev.kind==='reply'?'คุณตอบร้าน':ev.kind==='note'?'ข้อความจากร้าน':statusNames[ev.status]),date);if(ev.kind==='reply')item.classList.add('timeline-reply');item.append(line,node('p',ev.note));timeline.append(item);}}catch(e){loaded=false;timeline.replaceChildren(node('li','โหลดประวัติไม่สำเร็จ กรุณาปิดแล้วเปิดอีกครั้ง','member-hint'));fail(e);}});
+     row.append(details);
+     if(!['closed','cancelled'].includes(c.status)){
+       // Answer the shop on the case itself (e.g. confirm the model); the status does not change.
+       const form=node('form','','member-form case-reply'),text=field(form,'ตอบกลับร้าน (เช่น ยืนยันรุ่นเครื่อง)','textarea');text.maxLength=1000;text.rows=2;
+       const send=node('button','ส่งข้อความถึงร้าน','member-action');send.type='submit';form.append(send);
+       form.onsubmit=async e=>{e.preventDefault();send.disabled=true;send.textContent='กำลังส่ง…';me.textContent='';try{await memberApi('/member/cases/'+c.id+'/reply','POST',{note:text.value});await showMember('cases');}catch(err){fail(err);send.disabled=false;send.textContent='ส่งข้อความถึงร้าน';}};
+       row.append(form);
+     }
+     list.append(row);
    }mb.append(list);
  }else if(tab==='history'){
    const d=await memberApi('/member/conversations');if(!d.conversations.length)mb.append(node('p','แชทหลังเข้าสู่ระบบจะปรากฏที่นี่','member-hint'));

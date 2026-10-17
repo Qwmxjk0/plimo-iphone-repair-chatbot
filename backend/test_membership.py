@@ -58,6 +58,33 @@ class MemberTests(unittest.TestCase):
         self.assertEqual(self.ad.patch('/api/admin/cases/'+str(cid),json={'status':'awaiting_approval','note':'เสนอราคาสาธิต','quoted_price':3200}).status_code,200)
         return cid,self.a.get('/api/member/cases/'+str(cid)).json()['case']['quote']['id']
 
+    def test_no_repair_without_quote_and_message_only(self):
+        cid=self.a.post('/api/member/cases',json={'model':'iPhone 11','issue':'แบตเสื่อมทดสอบ'}).json()['case']['id'];url='/api/admin/cases/'+str(cid)
+        for status in ['received','checking']:
+            self.assertEqual(self.ad.patch(url,json={'status':status,'note':'ทดสอบขั้นตอน'}).status_code,200)
+        # Repair cannot start before a quote.
+        self.assertEqual(self.ad.patch(url,json={'status':'repairing','note':'เริ่มซ่อม'}).status_code,409)
+        # The shop asks a question without moving the case; a price change is not allowed here.
+        self.assertEqual(self.ad.patch(url,json={'status':'checking','note':'ยืนยันรุ่นอีกครั้ง','quoted_price':990}).status_code,409)
+        self.assertEqual(self.ad.patch(url,json={'status':'checking','note':'ยืนยันรุ่นอีกครั้ง'}).status_code,200)
+        reply='/api/member/cases/'+str(cid)+'/reply'
+        self.assertEqual(self.b.post(reply,json={'note':'ไม่ใช่เคสฉัน'}).status_code,404)
+        self.assertEqual(self.a.post(reply,json={'note':'iPhone 11 ครับ'}).status_code,200)
+        case=self.ad.get('/api/admin/cases').json()['cases'][0]
+        self.assertEqual((case['id'],case['status'],case['member_reply']),(cid,'checking','iPhone 11 ครับ'))
+        events=self.a.get('/api/member/cases/'+str(cid)).json()['events']
+        self.assertEqual([e['kind'] for e in events[-2:]],['note','reply'])
+        self.assertEqual(self.ad.patch(url,json={'status':'awaiting_approval','note':'ราคาแบต','quoted_price':990}).status_code,200)
+        self.assertIsNone(self.ad.get('/api/admin/cases').json()['cases'][0]['member_reply'])
+
+    def test_legacy_repairing_case_can_still_get_quote(self):
+        cid=self.a.post('/api/member/cases',json={'model':'iPhone 11','issue':'แบตเสื่อมทดสอบ'}).json()['case']['id']
+        with membership.db() as c:c.execute("UPDATE cases SET status='repairing' WHERE id=?",(cid,))
+        case=self.a.get('/api/member/cases/'+str(cid)).json()['case']
+        self.assertEqual(case['allowed_transitions'],['repairing','ready','awaiting_approval'])
+        self.assertEqual(self.ad.patch('/api/admin/cases/'+str(cid),json={'status':'awaiting_approval','note':'ราคาแบต','quoted_price':990}).status_code,200)
+        self.assertEqual(self.a.get('/api/member/cases/'+str(cid)).json()['case']['quote']['status'],'pending')
+
     def test_quote_approval_ownership_and_price_guard(self):
         cid,qid=self.quote_case();url='/api/member/cases/'+str(cid)+'/quote-decision'
         body={'quote_id':qid,'decision':'approve'}

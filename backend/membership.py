@@ -9,7 +9,7 @@ import nlu
 router=APIRouter(prefix='/api')
 DB_PATH=os.getenv('MEMBER_DB','/app/data/members.sqlite3')
 STATUSES=['submitted','received','checking','awaiting_approval','repairing','ready','closed','cancelled']
-TRANSITIONS={'submitted':['received','cancelled'],'received':['checking','cancelled'],'checking':['awaiting_approval','repairing','cancelled'],'awaiting_approval':['repairing','cancelled'],'repairing':['ready'],'ready':['closed'],'closed':[],'cancelled':[]}
+TRANSITIONS={'submitted':['received','cancelled'],'received':['checking','cancelled'],'checking':['awaiting_approval','cancelled'],'awaiting_approval':['repairing','cancelled'],'repairing':['ready'],'ready':['closed'],'closed':[],'cancelled':[]}
 
 def db():
     c=sqlite3.connect(DB_PATH,timeout=10);c.row_factory=sqlite3.Row;c.execute('PRAGMA foreign_keys=ON');return c
@@ -40,6 +40,9 @@ def init_db():
         """)
         if 'image_ids' not in [r[1] for r in c.execute('PRAGMA table_info(messages)')]:
             c.execute("ALTER TABLE messages ADD COLUMN image_ids TEXT NOT NULL DEFAULT ''")
+        # status = status change, note = shop message without a status change, reply = member message to the shop.
+        if 'kind' not in [r[1] for r in c.execute('PRAGMA table_info(case_events)')]:
+            c.execute("ALTER TABLE case_events ADD COLUMN kind TEXT NOT NULL DEFAULT 'status'")
         # Preserve existing waiting cases, adding a versioned quote once.
         c.execute("INSERT INTO case_quotes(case_id,amount,status,created) SELECT id,quoted_price,'pending',updated FROM cases WHERE status='awaiting_approval' AND quoted_price IS NOT NULL AND NOT EXISTS(SELECT 1 FROM case_quotes WHERE case_id=cases.id)")
         password=os.getenv('ADMIN_PASSWORD','')
@@ -173,14 +176,23 @@ def case_data(row):
     with db() as c:
         quote=c.execute('SELECT * FROM case_quotes WHERE case_id=? ORDER BY id DESC LIMIT 1',(d['id'],)).fetchone()
         d['payment']=payment_for(c,quote['id']) if quote else None
+        last=c.execute('SELECT kind,note FROM case_events WHERE case_id=? ORDER BY id DESC LIMIT 1',(d['id'],)).fetchone()
+    # The member's message is the newest event: the shop still owes an answer.
+    d['member_reply']=last['note'] if last and last['kind']=='reply' else None
     d['quote']=dict(quote) if quote else None
     d['can_pay']=bool(quote and quote['status']=='approved' and d['status'] not in ('cancelled','closed') and not (d['payment'] and d['payment']['status']=='paid'))
-    next_steps=list(TRANSITIONS[d['status']])
-    if d['status']=='awaiting_approval' and (not quote or quote['status']!='approved'):
-        next_steps=[s for s in next_steps if s!='repairing']
-    if d['status']=='awaiting_approval':next_steps.insert(0,'awaiting_approval')
-    d['allowed_transitions']=next_steps
+    d['allowed_transitions']=next_statuses(d['status'],quote)
     return d
+def next_statuses(status,quote):
+    """Statuses the shop may pick now. The current status first means "message only, keep the status";
+    for awaiting_approval it means "send a revised quote"."""
+    steps=list(TRANSITIONS[status])
+    approved=bool(quote and quote['status']=='approved')
+    if status=='awaiting_approval' and not approved:steps.remove('repairing')
+    # Cases moved to repairing before a quote was required can still get one.
+    if status=='repairing' and not approved:steps.append('awaiting_approval')
+    if steps:steps.insert(0,status)
+    return steps
 CASE_MODEL=re.compile(r'^iPhone (11|12|13|14|15|16|17)(?: (?:Pro Max|Pro|Plus|mini))?$')
 def open_case(u,model,issue,conversation_id=None,note='สมาชิกส่งคำขอซ่อม'):
     """Shared by the portal form and confirmed chat requests: same validation either way."""
@@ -206,7 +218,7 @@ def get_case(cid:int,request:Request):
     with db() as c:
         row=c.execute('SELECT * FROM cases WHERE id=? AND user_id=?',(cid,u['id'])).fetchone()
         if not row:raise HTTPException(404,'ไม่พบเคส')
-        events=c.execute('SELECT status,note,created FROM case_events WHERE case_id=? ORDER BY id',(cid,)).fetchall()
+        events=c.execute('SELECT status,note,created,kind FROM case_events WHERE case_id=? ORDER BY id',(cid,)).fetchall()
     return {'case':case_data(row),'events':[dict(r) for r in events]}
 @router.get('/admin/cases')
 def admin_cases(request:Request):
@@ -222,7 +234,7 @@ def admin_case(cid:int,request:Request):
         row=c.execute('SELECT * FROM cases WHERE id=?',(cid,)).fetchone()
         if not row:raise HTTPException(404,'ไม่พบเคส')
         messages=c.execute('SELECT role,content,image_count,created,image_ids FROM messages WHERE conversation_id=? ORDER BY id LIMIT 500',(row['conversation_id'],)).fetchall() if row['conversation_id'] else []
-        events=c.execute('SELECT status,note,created FROM case_events WHERE case_id=? ORDER BY id',(cid,)).fetchall()
+        events=c.execute('SELECT status,note,created,kind FROM case_events WHERE case_id=? ORDER BY id',(cid,)).fetchall()
         images=c.execute('SELECT id,kind,observation,created FROM chat_images WHERE conversation_id=? ORDER BY created',(row['conversation_id'],)).fetchall() if row['conversation_id'] else []
     return {'case':case_data(row),'messages':[message_data(r) for r in messages],'events':[dict(r) for r in events],'images':[dict(r) for r in images]}
 class CaseUpdate(BaseModel):
@@ -238,13 +250,19 @@ def update_case(cid:int,body:CaseUpdate,request:Request):
         c.execute('BEGIN IMMEDIATE')
         row=c.execute('SELECT * FROM cases WHERE id=?',(cid,)).fetchone()
         if not row:raise HTTPException(404,'ไม่พบเคส')
-        revising=row['status']=='awaiting_approval' and body.status=='awaiting_approval'
-        if not revising and body.status not in TRANSITIONS[row['status']]:raise HTTPException(409,'สถานะเปลี่ยนไม่ได้ตามขั้นตอน กรุณาโหลดข้อมูลใหม่')
         quote=c.execute('SELECT * FROM case_quotes WHERE case_id=? ORDER BY id DESC LIMIT 1',(cid,)).fetchone()
+        if body.status not in next_statuses(row['status'],quote):raise HTTPException(409,'สถานะเปลี่ยนไม่ได้ตามขั้นตอน กรุณาโหลดข้อมูลใหม่')
+        now=time.time()
+        if body.status==row['status']!='awaiting_approval':
+            # Message only: the status and the quoted price stay as they are.
+            if body.quoted_price is not None and body.quoted_price!=row['quoted_price']:raise HTTPException(409,'เปลี่ยนราคาได้เฉพาะตอนส่งใบเสนอราคา (รออนุมัติราคา)')
+            c.execute('UPDATE cases SET updated=? WHERE id=?',(now,cid))
+            c.execute("INSERT INTO case_events(case_id,actor,status,note,created,kind) VALUES(?,?,?,?,?,'note')",(cid,u['id'],row['status'],body.note.strip(),now))
+            return {'ok':True}
         if quote and body.status in ('awaiting_approval','cancelled') and c.execute("SELECT 1 FROM payments WHERE quote_id=? AND status='paid'",(quote['id'],)).fetchone():
             # Refunds are out of scope: a paid quote cannot be replaced or cancelled here.
             raise HTTPException(409,'เคสนี้ชำระเงินแล้ว ต้องคืนเงินผ่าน Stripe ก่อนจึงจะเปลี่ยนราคาหรือยกเลิกได้')
-        now=time.time();price=body.quoted_price if body.quoted_price is not None else row['quoted_price']
+        price=body.quoted_price if body.quoted_price is not None else row['quoted_price']
         if body.status=='awaiting_approval':
             if price is None:raise HTTPException(422,'กรุณาระบุราคาเสนอให้ลูกค้าอนุมัติ')
             c.execute("UPDATE case_quotes SET status='superseded' WHERE case_id=? AND status IN ('pending','approved')",(cid,))
@@ -259,6 +277,23 @@ def update_case(cid:int,body:CaseUpdate,request:Request):
         c.execute('INSERT INTO case_events(case_id,actor,status,note,created) VALUES(?,?,?,?,?)',(cid,u['id'],body.status,body.note.strip(),now))
     return {'ok':True}
 
+class CaseReply(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    note:str=Field(min_length=1,max_length=1000)
+@router.post('/member/cases/{cid}/reply')
+def reply_case(cid:int,body:CaseReply,request:Request):
+    """Member answers the shop (e.g. confirms the model) on the case itself; the status does not change."""
+    u=user(request);note=body.note.strip()
+    if not note:raise HTTPException(422,'กรุณาพิมพ์ข้อความ')
+    with db() as c:
+        c.execute('BEGIN IMMEDIATE')
+        row=c.execute('SELECT * FROM cases WHERE id=? AND user_id=?',(cid,u['id'])).fetchone()
+        if not row:raise HTTPException(404,'ไม่พบเคส')
+        if row['status'] in ('closed','cancelled'):raise HTTPException(409,'เคสนี้ปิดแล้ว กรุณาส่งเคสใหม่หรือติดต่อร้าน')
+        now=time.time()
+        c.execute('UPDATE cases SET updated=? WHERE id=?',(now,cid))
+        c.execute("INSERT INTO case_events(case_id,actor,status,note,created,kind) VALUES(?,?,?,?,?,'reply')",(cid,u['id'],row['status'],note,now))
+    return {'ok':True}
 
 class QuoteDecision(BaseModel):
     model_config=ConfigDict(extra='forbid')
@@ -299,7 +334,7 @@ def status_label(item):
     return STATUS_NAMES[item['status']]
 def case_lines(item,events,topic):
     q=item['quote'];lines=[f"{item['reference']} · {item['model']} · สถานะ: {status_label(item)}",'อัปเดตล่าสุด: '+thai_time(item['updated'])]
-    note=next((e['note'] for e in reversed(events) if e['note']),'')
+    note=next((e['note'] for e in reversed(events) if e['note'] and e['kind']!='reply'),'')
     if note:lines.append('ข้อความล่าสุดจากร้าน: '+note[:300])
     if q:
         lines.append(f"ใบเสนอราคา #{q['id']}: {q['amount']:,.2f} บาท · {QUOTE_NAMES[q['status']]}")
@@ -324,7 +359,7 @@ def case_answer(u,text,ref=None,topic='status'):
     with db() as c:
         if ref:rows=c.execute('SELECT * FROM cases WHERE id=? AND user_id=?',(ref,u['id'])).fetchall()
         else:rows=c.execute('SELECT * FROM cases WHERE user_id=? ORDER BY updated DESC,id DESC LIMIT 5',(u['id'],)).fetchall()
-        events={r['id']:c.execute('SELECT status,note,created FROM case_events WHERE case_id=? ORDER BY id',(r['id'],)).fetchall() for r in rows}
+        events={r['id']:c.execute('SELECT status,note,created,kind FROM case_events WHERE case_id=? ORDER BY id',(r['id'],)).fetchall() for r in rows}
     # Someone else's case and a missing case get the same reply: no existence leak.
     if not rows:return ('ไม่พบเคสนี้ในบัญชีของคุณครับ กรุณาตรวจเลข PLM อีกครั้ง' if ref else 'บัญชีของคุณยังไม่มีเคสซ่อมครับ'),None
     if len(rows)==1:

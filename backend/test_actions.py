@@ -2,7 +2,7 @@
 import json, os, tempfile, unittest
 from unittest.mock import patch
 from fastapi.testclient import TestClient
-import main, membership, router
+import assist, main, membership, router
 from test_chat import MemoryRedis
 
 def route(intent='case', topic='status', models=(), services=(), ref=None, standalone='คำถาม'):
@@ -109,6 +109,15 @@ class ActionTests(unittest.TestCase):
         cid = self.quoted_case()
         self.say('ยืนยัน')
         self.assertEqual(self.cases()[0]['quote']['status'], 'pending')
+    def test_assist_flags_model_conflict_between_form_and_chat(self):
+        item = {'model': 'iPhone 11'}
+        chat = [{'role': 'user', 'content': 'ไอโฟน 13 แบตเสื่อม'}, {'role': 'assistant', 'content': 'iPhone 12 ก็มีครับ'}]
+        hint = assist.model_conflicts(item, chat)
+        self.assertEqual(len(hint), 1)
+        self.assertIn('iPhone 11', hint[0]); self.assertIn('iPhone 13', hint[0]); self.assertNotIn('iPhone 12', hint[0])
+        self.assertEqual(assist.model_conflicts(item, [{'role': 'user', 'content': 'iPhone 11 แบตเสื่อม'}]), [])
+        self.assertEqual(assist.model_conflicts(item, []), [])
+
     def test_admin_assist_rejects_invalid_suggestions(self):
         cid = self.quoted_case()
         self.llm_out = json.dumps({'summary': 'ลูกค้าจอ iPhone 13 แตก', 'missing_info': ['ทัชยังใช้ได้ไหม'], 'suggested_status': 'closed', 'suggested_price': 500,

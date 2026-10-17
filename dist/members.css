@@ -92,3 +92,6 @@ button{color:inherit}
 #member-dialog .admin-note strong{font-size:15px}
 #member-dialog .admin-note p{margin:0 0 6px;font-size:13px;color:#a1a1a6}
 #member-dialog .admin-note .member-action{text-decoration:none;font-size:13px;padding:8px 16px;border-radius:999px}
+.case-timeline li.timeline-reply::before{background:var(--green)}
+.case-reply{margin-top:12px;gap:8px}#member-dialog .case-reply textarea{min-height:60px}
+.member-reply{color:var(--green)!important}

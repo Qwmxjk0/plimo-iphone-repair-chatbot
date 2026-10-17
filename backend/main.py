@@ -753,7 +753,7 @@ async def admin_assist(cid: int, request: Request):
         row = c.execute('SELECT * FROM cases WHERE id=?', (cid,)).fetchone()
         if not row:
             raise HTTPException(404, 'ไม่พบเคส')
-        events = [dict(e) for e in c.execute('SELECT status,note,created FROM case_events WHERE case_id=? ORDER BY id', (cid,)).fetchall()]
+        events = [dict(e) for e in c.execute('SELECT status,note,created,kind FROM case_events WHERE case_id=? ORDER BY id', (cid,)).fetchall()]
         messages = [dict(m) for m in c.execute('SELECT role,content FROM messages WHERE conversation_id=? ORDER BY id', (row['conversation_id'],)).fetchall()] if row['conversation_id'] else []
     item = membership.case_data(row)
     data, facts = assist.payload(item, events, messages)

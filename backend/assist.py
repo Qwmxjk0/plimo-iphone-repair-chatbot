@@ -11,7 +11,7 @@ import catalog
 import membership
 import nlu
 
-VERSION = 'assist-v1'
+VERSION = 'assist-v2'
 STATUS_CHOICES = membership.STATUSES + ['none']
 SCHEMA = {
     'type': 'object', 'additionalProperties': False,
@@ -34,7 +34,7 @@ missing_info: ข้อมูลที่ร้านยังต้องถา
 suggested_status: สถานะถัดไปที่ควรทำ ต้องเลือกจาก "สถานะที่เปลี่ยนได้" เท่านั้น ถ้ายังไม่ควรเปลี่ยนให้ใช้ none เมื่อเคสพร้อมรับเครื่องและลูกค้ารับแล้วหรือจ่ายครบ ให้แนะนำ closed
 suggested_price: ราคาเสนอรวมเป็นตัวเลข ใช้เฉพาะเมื่อกำลังจะส่งใบเสนอ (awaiting_approval) และมีราคาตรงรุ่นใน "ข้อมูลราคาจากระบบ" เท่านั้น ถ้ารุ่นต้องประเมินแยก ไม่มีราคา หรือยังไม่ได้ตรวจเครื่อง ให้เป็น null
 quote_items: รายการและราคาจาก "ข้อมูลราคาจากระบบ" ที่เกี่ยวกับอาการ (ราคา null ถ้าไม่มี) ห้ามแต่งรายการหรือตัวเลข
-customer_note: ข้อความสุภาพถึงลูกค้าสำหรับใส่เป็นหมายเหตุของการเปลี่ยนสถานะที่แนะนำ 1–3 ประโยค ลงท้ายครับ ตัวเลขราคาต้องตรงกับข้อมูลราคาจากระบบ ห้ามสัญญาระยะเวลาซ่อม รับประกัน หรือส่วนลด ถ้าแนะนำ closed ให้เขียนสรุปงานที่ทำในเคสสั้น ๆ
+customer_note: ข้อความสุภาพถึงลูกค้าสำหรับใส่เป็นหมายเหตุของการเปลี่ยนสถานะที่แนะนำ 1–3 ประโยค ลงท้ายครับ ตัวเลขราคาต้องตรงกับข้อมูลราคาจากระบบ ห้ามสัญญาระยะเวลาซ่อม รับประกัน หรือส่วนลด ถ้าแนะนำ closed ให้เขียนสรุปงานที่ทำในเคสสั้น ๆ ถ้าข้อมูลในเคส (รุ่น อาการ) ขัดกับบทสนทนาที่ลูกค้าแนบ ให้บอกลูกค้าตรง ๆ ว่าแต่ละแหล่งระบุไว้ว่าอะไร แล้วขอให้ยืนยัน เช่น "ในฟอร์มเปิดเคสระบุ iPhone 11 แต่ในแชทแจ้งว่า iPhone 13 รบกวนยืนยันรุ่นครับ" ห้ามขอให้ยืนยันโดยไม่บอกเหตุผล และถ้าข้อมูลไม่ขัดกันห้ามถามรุ่นซ้ำ
 reason: เหตุผลสั้น ๆ ของคำแนะนำสำหรับแอดมิน"""
 INSIGHT_INSTRUCTIONS = """คุณช่วยเจ้าของร้านซ่อม iPhone Plimo อ่านสถิติคำถามลูกค้าวันนี้ (ไม่มีข้อมูลส่วนตัว) แล้วเขียนข้อเสนอแนะภาษาไทย 3–5 ข้อ สั้น ๆ เป็นรายการ
 เน้น: คำถามที่ผู้ช่วยตอบว่าไม่มีข้อมูล (ร้านควรเพิ่มข้อมูลอะไรในคลัง), บริการหรือรุ่นที่ถูกถามบ่อย, สัญญาณที่ควรมีพนักงานตอบเอง
@@ -57,6 +57,16 @@ def hints(item, events, now=None):
         out.append('เครื่องพร้อมรับ ' + ('ชำระแล้ว ปิดเคสได้เมื่อลูกค้ารับเครื่อง' if p and p['status'] == 'paid' else 'ยังไม่มีการชำระออนไลน์ ตรวจการชำระก่อนปิดเคส'))
     return out
 
+def model_conflicts(item, messages):
+    """Models the customer named in the attached chat that differ from the model on the case form."""
+    form = set(nlu.extract_models(item['model']))
+    chat = {m for msg in messages if msg['role'] == 'user' for m in nlu.extract_models(msg['content'])}
+    other = sorted(chat - form)
+    if not form or not other:
+        return []
+    names = ', '.join(catalog.model_name(*m) for m in other)
+    return [f"ฟอร์มเปิดเคสระบุ {item['model']} แต่ในแชทลูกค้าพูดถึง {names} ควรขอให้ลูกค้ายืนยันรุ่นพร้อมบอกเหตุผล"]
+
 def payload(item, events, messages):
     text = item['issue'] + ' ' + ' '.join(m['content'] for m in messages if m['role'] == 'user')
     facts = catalog.lookup(nlu.extract_models(item['model']), nlu.extract_services(text))
@@ -66,11 +76,11 @@ def payload(item, events, messages):
                 'สถานะที่เปลี่ยนได้': item['allowed_transitions'],
                 'ใบเสนอล่าสุด': {'เลขที่': q['id'], 'ราคา': q['amount'], 'สถานะ': q['status']} if q else None,
                 'การชำระ': p['status'] if p else None},
-        'เหตุการณ์': [{'สถานะ': e['status'], 'หมายเหตุ': e['note'][:200]} for e in events[-10:]],
+        'เหตุการณ์': [{'สถานะ': e['status'], 'จาก': 'ลูกค้า' if e.get('kind') == 'reply' else 'ร้าน', 'หมายเหตุ': e['note'][:200]} for e in events[-10:]],
         # Card numbers / national IDs are masked again here before leaving the server.
         'บทสนทนาที่ลูกค้าแนบ': [{'role': m['role'], 'content': nlu.inspect(m['content'])[0][:300]} for m in messages[-16:]],
         'ข้อมูลราคาจากระบบ': facts['rows'],
-        'ข้อสังเกตจากระบบ': hints(item, events),
+        'ข้อสังเกตจากระบบ': hints(item, events) + model_conflicts(item, messages),
     }
     return data, facts
 
