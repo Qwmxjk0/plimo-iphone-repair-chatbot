@@ -126,5 +126,20 @@ class RouterParseTests(unittest.TestCase):
         self.assertEqual(router.fallback('ซ่อมเสร็จภายในกี่ชั่วโมง')['intent'], 'shop_info')
         self.assertTrue(router.fallback('วันนี้เปิดไหม')['time_sensitive'])
 
+class RouterCasePriceTests(unittest.TestCase):
+    def test_service_price_question_is_not_the_case_quote(self):
+        import router
+        raw = lambda ref: json.dumps({'intent': 'case', 'standalone': 'q', 'models': [], 'services': [], 'case_ref': ref, 'case_topic': 'price',
+                                      'extra_question': None, 'needs_clarification': False, 'time_sensitive': False})
+        r = router.parse(raw(49), 'เปลี่ยนจอ iPhone 14 เท่าไหร่')
+        self.assertEqual((r['intent'], r['case_ref'], r['case_topic']), ('price', None, 'none'))
+        self.assertEqual(router.parse(raw(49), 'ราคาเคสผมเท่าไหร่')['intent'], 'case')
+        none = json.loads(raw(49)); none['case_topic'] = 'none'
+        self.assertEqual(router.parse(json.dumps(none), 'เปลี่ยนจอ iPhone 14 เท่าไหร่')['intent'], 'price')
+        opening = json.loads(raw(None)); opening['case_topic'] = 'open'
+        self.assertEqual(router.parse(json.dumps(opening), 'อยากส่งซ่อมจอ iPhone 14')['intent'], 'case')
+        self.assertEqual(router.parse(raw(None), 'เปลี่ยนจอ PLM-00049 เท่าไหร่')['intent'], 'case')
+
+
 if __name__ == '__main__':
     unittest.main()

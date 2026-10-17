@@ -332,17 +332,36 @@ def status_label(item):
     q=item['quote']
     if item['status']=='awaiting_approval' and q and q['status']=='approved':return 'อนุมัติราคาแล้ว รอร้านเริ่มซ่อม'
     return STATUS_NAMES[item['status']]
+def case_lead(item,topic):
+    """First sentence: answers the question for this status instead of repeating the same block."""
+    ref,st,q,p=item['reference'],item['status'],item['quote'],item.get('payment')
+    paid=bool(p and p['status']=='paid')
+    if st=='closed':
+        if topic=='pickup':return f'เคส {ref} ปิดเรียบร้อยแล้วครับ ร้านปิดเคสหลังส่งมอบงานแล้ว ไม่ต้องทำอะไรเพิ่ม ถ้าคุณยังไม่ได้รับเครื่อง หรือเครื่องมีปัญหาหลังซ่อม กรุณาติดต่อร้านครับ'
+        return f'เคส {ref} ปิดเรียบร้อยแล้วครับ งานซ่อมเสร็จ'+('และชำระเงินครบแล้ว' if paid else '')+' ไม่ต้องดำเนินการอะไรเพิ่มครับ'
+    if st=='cancelled':return f'เคส {ref} ยกเลิกแล้วครับ ถ้าต้องการซ่อมใหม่ ส่งเคสใหม่ได้ที่ บัญชี → ส่งเคสใหม่'
+    if st=='ready':
+        if topic=='pickup':return f'เคส {ref} ซ่อมเสร็จแล้วครับ ถ้ารับเครื่องแล้ว ร้านจะปิดเคสให้หลังตรวจการรับเครื่อง'
+        return f'เคส {ref} ซ่อมเสร็จแล้ว รับเครื่องที่ร้านได้เลยครับ'+('' if paid or not item.get('can_pay') else ' ชำระค่าซ่อมก่อนหรือตอนรับเครื่องได้')
+    if st=='repairing':return f'เคส {ref} ร้านกำลังซ่อมอยู่ครับ ยังรับเครื่องไม่ได้ เมื่อเสร็จสถานะจะเปลี่ยนเป็น "พร้อมรับเครื่อง"'
+    if st=='awaiting_approval':
+        if q and q['status']=='approved':return f'คุณอนุมัติราคาเคส {ref} แล้วครับ รอร้านเริ่มซ่อม'
+        return f'เคส {ref} รอคุณอนุมัติราคาอยู่ครับ ร้านจะเริ่มซ่อมหลังคุณอนุมัติ'
+    if st=='checking':return f'ร้านกำลังตรวจเช็คเครื่องเคส {ref} ครับ จะส่งใบเสนอราคาให้คุณอนุมัติก่อนเริ่มซ่อม'
+    if st=='received':return f'ร้านรับเรื่องเคส {ref} แล้วครับ ขั้นต่อไปคือตรวจเช็คเครื่อง'
+    return f'ส่งเคส {ref} แล้วครับ รอร้านรับเรื่อง'
 def case_lines(item,events,topic):
     q=item['quote'];lines=[f"{item['reference']} · {item['model']} · สถานะ: {status_label(item)}",'อัปเดตล่าสุด: '+thai_time(item['updated'])]
     note=next((e['note'] for e in reversed(events) if e['note'] and e['kind']!='reply'),'')
-    if note:lines.append('ข้อความล่าสุดจากร้าน: '+note[:300])
+    # A closed or cancelled case needs no "what to do next" from the shop.
+    if note and (item['status'] not in ('closed','cancelled') or topic=='note'):lines.append('ข้อความล่าสุดจากร้าน: '+note[:300])
     if q:
         lines.append(f"ใบเสนอราคา #{q['id']}: {q['amount']:,.2f} บาท · {QUOTE_NAMES[q['status']]}")
         if q['status']=='pending' and item['status']=='awaiting_approval':lines.append('อนุมัติหรือปฏิเสธราคาได้ที่ บัญชี → งานซ่อมของฉัน')
     elif topic in ('price','payment'):lines.append('เคสนี้ยังไม่มีใบเสนอราคา ทางร้านจะเสนอราคาหลังตรวจเช็ค')
     lines.extend(case_extra_lines(item,topic))
     if topic=='action':lines.append('แชทไม่สามารถยกเลิก อนุมัติ หรือแก้ไขเคสแทนคุณได้ กรุณาทำที่ บัญชี → งานซ่อมของฉัน หรือแจ้งทางร้านครับ')
-    if topic=='pickup' and item['status']!='ready':lines.append('เมื่อซ่อมเสร็จ สถานะจะเปลี่ยนเป็น "พร้อมรับเครื่อง" ตรวจได้ในบัญชีหรือถามในแชทนี้ครับ')
+    if topic=='pickup' and item['status'] in ('submitted','received','checking','awaiting_approval'):lines.append('เมื่อซ่อมเสร็จ สถานะจะเปลี่ยนเป็น "พร้อมรับเครื่อง" ตรวจได้ในบัญชีหรือถามในแชทนี้ครับ')
     return lines
 def case_extra_lines(item,topic):
     """Payment state from SQLite only; the chat never confirms a payment itself."""
@@ -364,7 +383,7 @@ def case_answer(u,text,ref=None,topic='status'):
     if not rows:return ('ไม่พบเคสนี้ในบัญชีของคุณครับ กรุณาตรวจเลข PLM อีกครั้ง' if ref else 'บัญชีของคุณยังไม่มีเคสซ่อมครับ'),None
     if len(rows)==1:
         item=case_data(rows[0])
-        return '\n'.join(['สถานะล่าสุดจากระบบเคสของคุณครับ']+case_lines(item,events[item['id']],topic)),item['id']
+        return case_lead(item,topic)+'\n\nรายละเอียดจากระบบ\n'+'\n'.join(case_lines(item,events[item['id']],topic)),item['id']
     lines=['สถานะล่าสุดจากระบบเคสของคุณครับ']
     for row in rows:
         item=case_data(row);q=item['quote']

@@ -7,7 +7,7 @@ which is also what makes answers shareable in the cache.
 import json
 import nlu
 
-VERSION = 'router-v8'
+VERSION = 'router-v10'
 INTENTS = ['shop_info', 'price', 'advice', 'ambiguous', 'case', 'payment', 'greeting', 'out_of_scope', 'unsafe']
 SERVICES = ['screen', 'battery', 'port_clean', 'speaker', 'rear_camera', 'film', 'clear_case', 'cable', 'water_damage', 'other']
 VARIANTS = ['base', 'mini', 'plus', 'pro', 'pro_max', 'air', 'e', 'unknown']
@@ -39,7 +39,7 @@ intent:
 - shop_info: opening hours and days, location, contact, warranty, repair duration, policies, supported models/brands/devices (other brands or devices are shop_info, not out_of_scope), inspection, parts, discounts, how to order. Also general how-it-works questions that are not about one of the customer's own cases: what a case status or a quote means, whether a case can be cancelled after repair starts, how case tracking works; using this chat, the website and the member account (sending photos, HEIC, how many images, forgot password, who can see sent photos or chat data, whether a slip sent in chat counts as paid); preparing the device (backup, Find My, passcode, Apple ID).
 - advice: symptoms, what may be wrong, whether to repair, care related to repair, reading a screen or battery value in an attached image.
 - ambiguous: in scope but too vague to answer usefully (for example "จอ??" or "ราคาเท่าไหร่" with nothing else and no context, or only stating which iPhone they use without a question or a wish to send it for repair).
-- case: the customer's own repair case: wanting to send a device in for repair / open a repair case, status, progress, quote amount, latest note, pickup, approving or rejecting their quote, or asking the chat to cancel or change their case. A general question about how statuses, quotes or cancellation work, with no case of theirs in view, is shop_info. Asking in general how long repairs take is shop_info, not case. Only asking a price (without saying they want to send the device in) is price, not case.
+- case: the customer's own repair case: wanting to send a device in for repair / open a repair case, status, progress, quote amount, latest note, pickup, approving or rejecting their quote, or asking the chat to cancel or change their case. A general question about how statuses, quotes or cancellation work, with no case of theirs in view, is shop_info. Asking in general how long repairs take is shop_info, not case. Only asking a price (without saying they want to send the device in) is price, not case, even while a case is being discussed: "เปลี่ยนจอ iPhone 14 เท่าไหร่" is price; only "ราคาเคสผมเท่าไหร่" or a question about the quote of their case is case.
 - payment: paying for a repair, payment methods or channels, payment status, refunds, and customers offering or asking to send card details in chat (they need to be told the safe way to pay; this is payment, not unsafe).
 - greeting: greetings, thanks or small talk without a question.
 - out_of_scope: everything else, including programming or code, homework, translation, general knowledge, writing tasks and other businesses, even when framed as being for the shop or for a technician.
@@ -126,6 +126,10 @@ def parse(raw, text):
         # An explicit PLM number is about a case even if the model said otherwise.
         extra = extra or (standalone if intent in ANSWERED else '')
         intent = 'case'
+    services_here = nlu.extract_services(text)
+    if intent == 'case' and data.get('case_topic') not in ('open', 'approve', 'reject', 'pay', 'action') and services_here and not nlu.is_case_question(text):
+        # "เปลี่ยนจอ iPhone 14 เท่าไหร่" right after a case is a catalog price question, not the case quote.
+        intent, ref, data['case_topic'] = 'price', None, 'none'
     if extra and intent in ANSWERED:
         # A second shop question must be answered, not dropped: fold it into the standalone question.
         standalone, extra = (f'{standalone} และ{extra}' if standalone else extra), ''

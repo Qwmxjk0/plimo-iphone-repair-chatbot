@@ -58,6 +58,19 @@ class MemberTests(unittest.TestCase):
         self.assertEqual(self.ad.patch('/api/admin/cases/'+str(cid),json={'status':'awaiting_approval','note':'เสนอราคาสาธิต','quoted_price':3200}).status_code,200)
         return cid,self.a.get('/api/member/cases/'+str(cid)).json()['case']['quote']['id']
 
+    def test_case_answer_leads_with_what_the_status_means(self):
+        cid=self.a.post('/api/member/cases',json={'model':'iPhone 14','issue':'แบตเสื่อมทดสอบ'}).json()['case']['id']
+        u=self.a.get('/api/auth/me').json()['user']
+        def ask(topic):return membership.case_answer(u,'',cid,topic)[0]
+        self.assertTrue(ask('status').startswith('ส่งเคส PLM-'))
+        with membership.db() as c:c.execute("UPDATE cases SET status='closed' WHERE id=?",(cid,))
+        closed,pickup=ask('status'),ask('pickup')
+        self.assertIn('ปิดเรียบร้อยแล้ว',closed.split('\n')[0])
+        self.assertIn('ยังไม่ได้รับเครื่อง',pickup.split('\n')[0])
+        self.assertNotEqual(closed.split('\n')[0],pickup.split('\n')[0])
+        # A closed case never tells the customer to wait for "พร้อมรับเครื่อง".
+        self.assertNotIn('เมื่อซ่อมเสร็จ',pickup)
+
     def test_no_repair_without_quote_and_message_only(self):
         cid=self.a.post('/api/member/cases',json={'model':'iPhone 11','issue':'แบตเสื่อมทดสอบ'}).json()['case']['id'];url='/api/admin/cases/'+str(cid)
         for status in ['received','checking']:
