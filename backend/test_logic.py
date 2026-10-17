@@ -137,6 +137,8 @@ class RouterCasePriceTests(unittest.TestCase):
         self.assertEqual(payload['รุ่นของเคสที่กำลังคุย'], 'iPhone 13 Pro')
         self.assertEqual(len(payload['บทสนทนาก่อนหน้า']), 4)
         self.assertIsNone(router.request('แล้วแบตล่ะ', [], None, False, 'iPhone 13')['รุ่นของเคสที่กำลังคุย'])
+        # Inside the two turns the router sees, it reads the model itself ("แล้ว 14 ล่ะ").
+        self.assertIsNone(router.request('Pro Max ล่ะ', hist[-2:] + [{'role': 'user', 'content': 'จอ iPhone 13 เท่าไหร่'}], None, False)['รุ่นล่าสุดที่ลูกค้าพูดถึง'])
 
     def test_service_price_question_is_not_the_case_quote(self):
         import router

@@ -8,7 +8,7 @@ import json
 import catalog
 import nlu
 
-VERSION = 'router-v11'
+VERSION = 'router-v12'
 INTENTS = ['shop_info', 'price', 'advice', 'ambiguous', 'case', 'payment', 'greeting', 'out_of_scope', 'unsafe']
 SERVICES = ['screen', 'battery', 'port_clean', 'speaker', 'rear_camera', 'film', 'clear_case', 'cable', 'water_damage', 'other']
 VARIANTS = ['base', 'mini', 'plus', 'pro', 'pro_max', 'air', 'e', 'unknown']
@@ -33,8 +33,8 @@ SCHEMA = {
 }
 
 INSTRUCTIONS = """You route messages for the Thai chat assistant of "Plimo iPhone Repair". The shop repairs iPhone 11–17 including Pro / Pro Max, sells a few accessories (glass film, clear case, Lightning and USB-C cables), and members can track repair cases (PLM-xxxxx), approve quotes and pay approved quotes in their account.
-Return JSON only. Never answer the customer. The input is JSON: the latest message, whether images are attached, up to two previous turns, the case currently being discussed and its model, and the latest iPhone model the customer named (possibly in an older turn).
-When a follow-up names a service or symptom but no model ("แล้วแบตล่ะ", "จอด้วย"), use "รุ่นล่าสุดที่ลูกค้าพูดถึง" for models; if that is empty, use "รุ่นของเคสที่กำลังคุย". A model in the latest message always wins.
+Return JSON only. Never answer the customer. The input is JSON: the latest message, whether images are attached, up to two previous turns, the case currently being discussed and its model, and the latest iPhone model the customer named in older turns that are not shown.
+When a follow-up names a service or symptom but no model ("แล้วแบตล่ะ", "จอด้วย") and the previous turns shown have no model either, use "รุ่นล่าสุดที่ลูกค้าพูดถึง"; if that is empty, use "รุ่นของเคสที่กำลังคุย". A model in the latest message or in the previous turns shown always wins.
 
 intent:
 - price: cost of a repair, service or accessory, totals or comparisons of prices.
@@ -104,8 +104,9 @@ Examples (the output must follow the same shape):
 ข้อความ "ขอบคุณมากครับ" -> {"intent":"greeting","standalone":"","models":[],"services":[],"case_ref":null,"case_topic":"none","extra_question":null,"needs_clarification":false,"time_sensitive":false}"""
 
 def latest_model(history):
-    """The last iPhone model the customer named anywhere in the kept history (not only the last two turns)."""
-    for h in reversed(history):
+    """The last iPhone model the customer named in turns older than the two the router sees. Inside the
+    window the router reads the turns itself ("แล้ว 14 ล่ะ"), so an older model must not override it."""
+    for h in reversed(history[:-4]):
         found = nlu.extract_models(str(h.get('content') or '')) if h.get('role') == 'user' else []
         if found:
             return catalog.model_name(*found[-1])
