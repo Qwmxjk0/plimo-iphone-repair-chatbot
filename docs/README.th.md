@@ -46,6 +46,8 @@
 | F22 | เปิด→ปิดเคสด้วย AI (ฝั่งลูกค้า) | บอกอาการในแชท → AI ถามรุ่น/อาการที่ขาด → เสนอเปิดเคส → ลูกค้ากด "ยืนยัน" จึงสร้างเคส; อนุมัติ/ปฏิเสธใบเสนอผ่านแชทแบบยืนยันซ้ำ; ปุ่มไปหน้าชำระ Stripe |
 | F23 | AI ช่วยแอดมิน | สรุปเคสจากแชท, ข้อมูลที่ต้องถามเพิ่ม, แนะนำสถานะถัดไปและราคาจากแค็ตตาล็อก, ร่างหมายเหตุถึงลูกค้า, ร่างสรุปปิดเคส — แอดมินกด "ใช้คำแนะนำ" แล้วบันทึกเอง; ทุกค่าตรวจกับสถานะที่เปลี่ยนได้และแค็ตตาล็อก |
 | F24 | Insight รายวันสำหรับเจ้าของร้าน | คำถามที่ถามบ่อย, คำถามที่บอทตอบว่าไม่มีข้อมูล (ช่องว่างความรู้), ข้อเสนอแนะจาก AI — เก็บเฉพาะคำถามที่ตัดข้อมูลส่วนตัวแล้ว |
+| F25 | ร้านกับลูกค้าคุยกันในเคส | แอดมินส่งข้อความโดยคงสถานะเดิม, ลูกค้าตอบร้านในหน้าเคส (`POST /api/member/cases/{id}/reply`), ต้องผ่าน "รออนุมัติราคา" ก่อนเริ่มซ่อมทุกเคส |
+| F26 | ตอบเรื่องเคสตามบริบท | ประโยคแรกตอบตรงคำถามจากบทสนทนาก่อนหน้า รายละเอียดเคสดึงจากฐานข้อมูล ตัวเลขที่ไม่มีในเคสถูกตัดทิ้ง; ถามราคาบริการหลังคุยเรื่องเคสตอบจาก catalog |
 | F21 | ติดตั้ง VPS คำสั่งเดียว | HTTPS อัตโนมัติ, firewall, backup รายวัน, healthcheck, log rotation |
 
 ## ติดตั้งบน VPS (Ubuntu 22.04/24.04)
@@ -107,9 +109,9 @@ docker compose exec api python seed_demo.py
 
 | ชั้น | ผลล่าสุด | รายงาน |
 |---|---|---|
-| Unit / contract (mock OpenAI/LightRAG/Stripe, Redis จริง) | 101/101 ผ่าน | [unit-latest.md](../qa/results/unit-latest.md) |
+| Unit / contract (mock OpenAI/LightRAG/Stripe, Redis จริง) | 101/101 ผ่าน (หลังแก้ 17 ต.ค.: 94/94 ไม่รวมชุด Redis) | [unit-latest.md](../qa/results/unit-latest.md) |
 | Eval คุณภาพคำตอบกับ OpenAI + LightRAG จริง (บน VPS) | **143/143** — ข้อมูลร้าน 14, ราคา 30, กำกวม 16, หลายเทิร์น 8, ติดตามเคส 19, ภาพ 15, safety/OWASP LLM 20, ชำระเงิน 1, คลังความรู้ 20 | [eval-vps.md](../qa/results/eval-vps.md) |
-| API ครบทุก endpoint (บน VPS) | 24/24 endpoint · 33/33 checks รวมสิทธิ์ 401/403/404 และ Stripe | [api-check-vps.md](../qa/results/api-check-vps.md) |
+| API ครบทุก endpoint (บน VPS) | 24/24 endpoint · 33/33 checks (ก่อนเพิ่ม `/reply` ซึ่งทดสอบด้วย unit test) รวมสิทธิ์ 401/403/404 และ Stripe | [api-check-vps.md](../qa/results/api-check-vps.md) |
 | สุ่มกติกา ต้องทำ/ห้ามทำ จาก system prompt (บน VPS) | 33/33 (17 กติกา, seed 2026) | [prompt-rules-vps.md](../qa/results/prompt-rules-vps.md) |
 | RAG retrieval (40 คำถาม มีแหล่งที่ถูกต้องกำกับ) | hit@1 72%, hit@3 98%, hit@5 100%, MRR 0.85 (คลัง 53 หัวข้อ; ก่อนจูน hit@1 31%) | [retrieval-vps.md](../qa/results/retrieval-vps.md) |
 | วงจรเคสเปิด→ปิดด้วย AI จริง (ลูกค้า + แอดมิน, บน VPS) | 16/16 ขั้น | [lifecycle-vps.md](../qa/results/lifecycle-vps.md) |

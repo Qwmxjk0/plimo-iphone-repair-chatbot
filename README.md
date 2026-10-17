@@ -29,9 +29,11 @@ An LLM-first customer assistant and admin copilot for a Thai iPhone repair shop.
 - Track cases by number in any form (PLM-00012, plm12, เคส 12, Thai digits)
 - Approve or reject quotes in chat or in the account page; pay with Stripe Checkout (test mode)
 - Chat history, private photo storage and a case timeline
+- Reply to the shop on the case itself (e.g. confirm the model); case answers in chat follow the conversation while the facts under them come from the database
 
 **Admin**
-- Case board with an enforced status flow (submitted → received → checking → awaiting approval → repairing → ready → closed)
+- Case board with an enforced status flow (submitted → received → checking → awaiting approval → repairing → ready → closed); repair cannot start before the customer approves a quote
+- Message the customer without changing the status; the latest customer reply shows on the case card
 - AI case assist: summary, missing information, next status, quote from the catalog, draft note to the customer (all validated)
 - Daily insights (top questions, questions the bot could not answer) and metrics (cache hit rate, tokens, AI cost)
 
@@ -57,13 +59,13 @@ Request path: **guards → cache → router → (SQLite for cases/payments) or (
 | Suite | Result | Report |
 |---|---|---|
 | Answer quality eval (9 categories) | **143/143** | [eval-vps.md](qa/results/eval-vps.md) |
-| Every API endpoint + access control | **24/24 endpoints**, 33/33 checks | [api-check-vps.md](qa/results/api-check-vps.md) |
+| Every API endpoint + access control | **24/24 endpoints**, 33/33 checks (before `POST /api/member/cases/{id}/reply`, which is unit-tested) | [api-check-vps.md](qa/results/api-check-vps.md) |
 | Randomized do/don't prompt rules | **33/33** (17 rules) | [prompt-rules-vps.md](qa/results/prompt-rules-vps.md) |
 | RAG retrieval (40 labelled questions) | hit@1 72%, **hit@3 98%**, MRR 0.85 | [retrieval-vps.md](qa/results/retrieval-vps.md) |
 | Security, OWASP Top 10:2025 | **51/51** | [security-vps.md](qa/results/security-vps.md) |
 | Case lifecycle with AI (open → close) | **16/16** steps | [lifecycle-vps.md](qa/results/lifecycle-vps.md) |
 | Stripe test payment + webhook | paid, both events delivered | [stripe-payment-vps.md](qa/results/stripe-payment-vps.md) |
-| Unit / contract (mocked providers) | **101/101** | [unit-latest.md](qa/results/unit-latest.md) |
+| Unit / contract (mocked providers) | **101/101** (17 Oct changes: 94/94 without the Redis suite) | [unit-latest.md](qa/results/unit-latest.md) |
 
 **Test plan:** [qa/test-plan.md](qa/test-plan.md) (objectives, suites, pass criteria, bugs found) · **Test sets:** [qa/eval_suite.json](qa/eval_suite.json) (143 cases), [qa/prompt_rules.json](qa/prompt_rules.json) (17 rules / 33 questions), [qa/images/](qa/images/) (synthetic test images) · **How to run each suite:** [qa/README.md](qa/README.md) · **Guardrails and OWASP mapping:** [qa/guardrails.md](qa/guardrails.md)
 
