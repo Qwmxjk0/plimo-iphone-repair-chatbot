@@ -76,7 +76,7 @@ children.push(h1('1. ชื่อโครงงานและผู้พั�
 const SEED = fs.readFileSync(path.join(PROJECT, 'backend/seed_demo.py'), 'utf8');
 const seedPw = (u) => (SEED.match(new RegExp("\\('" + u + "','([^']+)'")) || [])[1] || '(ดู qa/member-demo.md)';
 children.push(h2('1.1 บัญชีสำหรับทดสอบ'),
-  table([2300, 2000, 2200, 2526], ['บทบาท', 'ชื่อผู้ใช้', 'รหัสผ่าน', 'เข้าที่'], [
+  table([1400, 2450, 2950, 2226], ['บทบาท', 'ชื่อผู้ใช้', 'รหัสผ่าน', 'เข้าที่'], [
     ['ลูกค้า (สมาชิก)', 'demo_user', seedPw('demo_user'), 'https://203-156-66-86.sslip.io → ปุ่ม "เข้าสู่ระบบ" มุมขวาบน'],
     ['แอดมิน', 'demo_admin', seedPw('demo_admin'), 'https://203-156-66-86.sslip.io/admin.html'],
     ['บัตรทดสอบ Stripe', '4242 4242 4242 4242', 'วันหมดอายุในอนาคต · CVC ใดก็ได้', 'ปุ่ม "ชำระเงิน" ในบัญชี (ไม่มีการตัดเงินจริง)'],
