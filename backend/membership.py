@@ -350,6 +350,18 @@ def case_lead(item,topic):
     if st=='checking':return f'ร้านกำลังตรวจเช็คเครื่องเคส {ref} ครับ จะส่งใบเสนอราคาให้คุณอนุมัติก่อนเริ่มซ่อม'
     if st=='received':return f'ร้านรับเรื่องเคส {ref} แล้วครับ ขั้นต่อไปคือตรวจเช็คเครื่อง'
     return f'ส่งเคส {ref} แล้วครับ รอร้านรับเรื่อง'
+def case_brief(u,cid):
+    """Facts of one owned case for wording a chat answer, plus the amounts that answer may contain."""
+    with db() as c:
+        row=c.execute('SELECT * FROM cases WHERE id=? AND user_id=?',(cid,u['id'])).fetchone()
+        if not row:return None
+        events=c.execute('SELECT status,note,created,kind FROM case_events WHERE case_id=? ORDER BY id DESC LIMIT 6',(cid,)).fetchall()
+    item=case_data(row);q,p=item['quote'],item.get('payment')
+    facts={'เลขเคส':item['reference'],'รุ่น':item['model'],'อาการ':item['issue'][:200],'สถานะ':status_label(item),
+           'ใบเสนอราคา':{'ราคา':q['amount'],'สถานะ':QUOTE_NAMES[q['status']]} if q else None,
+           'การชำระเงิน':{'สถานะ':p['status'],'ยอด':p['amount']} if p else None,'ชำระออนไลน์ได้ตอนนี้':item['can_pay'],
+           'เหตุการณ์ล่าสุด':[{'จาก':'ลูกค้า' if e['kind']=='reply' else 'ร้าน','สถานะ':STATUS_NAMES[e['status']],'ข้อความ':e['note'][:200],'เวลา':thai_time(e['created'])} for e in reversed(events)]}
+    return facts,{0.0}|{x['amount'] for x in (q,p) if x}
 def case_lines(item,events,topic):
     q=item['quote'];lines=[f"{item['reference']} · {item['model']} · สถานะ: {status_label(item)}",'อัปเดตล่าสุด: '+thai_time(item['updated'])]
     note=next((e['note'] for e in reversed(events) if e['note'] and e['kind']!='reply'),'')

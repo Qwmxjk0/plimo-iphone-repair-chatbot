@@ -71,6 +71,27 @@ class MemberTests(unittest.TestCase):
         # A closed case never tells the customer to wait for "พร้อมรับเครื่อง".
         self.assertNotIn('เมื่อซ่อมเสร็จ',pickup)
 
+    def test_case_answer_worded_in_context_but_facts_stay_from_db(self):
+        import asyncio
+        cid=self.a.post('/api/member/cases',json={'model':'iPhone 14','issue':'แบตเสื่อมทดสอบ'}).json()['case']['id']
+        u=self.a.get('/api/auth/me').json()['user'];base,_=membership.case_answer(u,'',cid,'status')
+        seen={}
+        async def llm(instructions,content,**kw):
+            seen['payload']=content[0]['text'];return 'ร้านยังไม่ได้รับเรื่องครับ'
+        hist=[{'role':'user','content':'ร้านเปิดกี่โมง'},{'role':'assistant','content':'10:00 ครับ'}]
+        with patch.object(main,'OPENAI_KEY','test'),patch.object(main,'llm',llm),patch.object(main,'cache',MemoryRedis()):
+            out=asyncio.run(main.phrase_case(u,cid,'แล้วเคสผมล่ะ',hist,base,{}))
+        self.assertTrue(out.startswith('ร้านยังไม่ได้รับเรื่องครับ'))
+        self.assertEqual(out.split(main.CASE_DETAILS)[1],base.split(main.CASE_DETAILS)[1])
+        self.assertIn('ร้านเปิดกี่โมง',seen['payload'])
+        # An amount the case does not have keeps the rule-based sentence.
+        async def bad(instructions,content,**kw):return 'ค่าซ่อม 500 บาทครับ'
+        with patch.object(main,'OPENAI_KEY','test'),patch.object(main,'llm',bad),patch.object(main,'cache',MemoryRedis()):
+            self.assertEqual(asyncio.run(main.phrase_case(u,cid,'กี่บาท',[],base,{})),base)
+        async def down(instructions,content,**kw):raise RuntimeError('provider down')
+        with patch.object(main,'OPENAI_KEY','test'),patch.object(main,'llm',down):
+            self.assertEqual(asyncio.run(main.phrase_case(u,cid,'กี่บาท',[],base,{})),base)
+
     def test_no_repair_without_quote_and_message_only(self):
         cid=self.a.post('/api/member/cases',json={'model':'iPhone 11','issue':'แบตเสื่อมทดสอบ'}).json()['case']['id'];url='/api/admin/cases/'+str(cid)
         for status in ['received','checking']:
